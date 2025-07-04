@@ -8,6 +8,7 @@ import {
   User,
   Lightbulb,
   Github,
+  Shield,
 } from 'lucide-react';
 
 import {
@@ -30,6 +31,7 @@ const menuItems = [
   { href: '/proposals', label: 'Proposals', icon: FileText },
   { href: '/profile', label: 'My Engagement', icon: User },
   { href: '/optimize', label: 'Proposal Optimizer', icon: Lightbulb },
+  { href: '/admin', label: 'Admin', icon: Shield },
 ];
 
 function AppLogo() {

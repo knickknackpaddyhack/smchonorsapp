@@ -1,8 +1,14 @@
+'use client';
+
+import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { engagements } from '@/lib/data';
-import { Award, Calendar, CheckSquare, FileText } from 'lucide-react';
+import { Award, Calendar, CheckSquare, FileText, Pencil } from 'lucide-react';
 import type { Engagement } from '@/lib/types';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { useToast } from "@/hooks/use-toast";
 
 function getIconForEngagement(type: Engagement['type']) {
     switch (type) {
@@ -16,18 +22,75 @@ function getIconForEngagement(type: Engagement['type']) {
 }
 
 export default function ProfilePage() {
+    const { toast } = useToast();
+    const [isEditing, setIsEditing] = useState(false);
+    const [name, setName] = useState('Community Member');
+    const [email, setEmail] = useState('member@email.com');
+    const [tempName, setTempName] = useState(name);
+    const [tempEmail, setTempEmail] = useState(email);
+
+    const handleSave = () => {
+        setName(tempName);
+        setEmail(tempEmail);
+        setIsEditing(false);
+        toast({
+            title: "Profile updated successfully!",
+        });
+    };
+
+    const handleCancel = () => {
+        setTempName(name);
+        setTempEmail(email);
+        setIsEditing(false);
+    }
+
   return (
     <div className="space-y-6">
         <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-center gap-4">
-                <Avatar className="h-20 w-20">
-                    <AvatarImage src="https://placehold.co/80x80.png" alt="Community Member" data-ai-hint="person face" />
-                    <AvatarFallback>CM</AvatarFallback>
-                </Avatar>
-                <div className="text-center sm:text-left">
-                    <h2 className="text-2xl font-bold font-headline">Community Member</h2>
-                    <p className="text-muted-foreground">member@email.com</p>
-                    <p className="text-sm text-muted-foreground mt-1">Joined on January 1, 2023</p>
+            <CardHeader>
+                <div className="flex items-start justify-between gap-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-4">
+                        <Avatar className="h-20 w-20">
+                            <AvatarImage src="https://placehold.co/80x80.png" alt={name} data-ai-hint="person face" />
+                            <AvatarFallback>{name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                        </Avatar>
+                        <div className="text-center sm:text-left">
+                            {isEditing ? (
+                                <div className="space-y-2">
+                                    <Input 
+                                        id="name"
+                                        value={tempName}
+                                        onChange={(e) => setTempName(e.target.value)}
+                                        className="text-2xl font-bold font-headline"
+                                    />
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={tempEmail}
+                                        onChange={(e) => setTempEmail(e.target.value)}
+                                        className="text-muted-foreground"
+                                    />
+                                </div>
+                            ) : (
+                                <>
+                                    <h2 className="text-2xl font-bold font-headline">{name}</h2>
+                                    <p className="text-muted-foreground">{email}</p>
+                                </>
+                            )}
+                            <p className="text-sm text-muted-foreground mt-1">Joined on January 1, 2023</p>
+                        </div>
+                    </div>
+                    {isEditing ? (
+                        <div className="flex gap-2">
+                            <Button onClick={handleSave}>Save</Button>
+                            <Button variant="outline" onClick={handleCancel}>Cancel</Button>
+                        </div>
+                    ) : (
+                        <Button variant="outline" size="icon" onClick={() => setIsEditing(true)}>
+                            <Pencil className="h-4 w-4" />
+                            <span className="sr-only">Edit Profile</span>
+                        </Button>
+                    )}
                 </div>
             </CardHeader>
         </Card>

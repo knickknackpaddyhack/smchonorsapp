@@ -55,7 +55,7 @@ export default function NewProposalPage() {
       <CardHeader>
         <CardTitle className="font-headline text-2xl">Submit a New Proposal</CardTitle>
         <CardDescription>
-          Share your idea with the community. Fill out the form below to get started.
+          Share your event idea. Fill out the form below to get started.
         </CardDescription>
       </CardHeader>
       <CardContent>

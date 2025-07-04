@@ -19,6 +19,8 @@ export interface Proposal {
   resources: string;
   targetAudience: string;
   status: 'Under Review' | 'Approved' | 'In Progress' | 'Completed' | 'Rejected';
+  submittedBy: string;
+  submittedDate: string;
 }
 
 export interface Engagement {

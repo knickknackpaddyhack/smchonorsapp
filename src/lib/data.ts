@@ -56,6 +56,8 @@ export const proposals: Proposal[] = [
     resources: 'Yoga mats, certified instructor.',
     targetAudience: 'All ages and fitness levels.',
     status: 'Approved',
+    submittedBy: 'Alice Johnson',
+    submittedDate: '2024-06-01',
   },
   {
     id: 'p2',
@@ -65,6 +67,8 @@ export const proposals: Proposal[] = [
     resources: 'Laptops, classroom space, experienced instructors.',
     targetAudience: 'Ages 13-18.',
     status: 'In Progress',
+    submittedBy: 'Bob Williams',
+    submittedDate: '2024-05-20',
   },
   {
     id: 'p3',
@@ -74,6 +78,8 @@ export const proposals: Proposal[] = [
     resources: 'Collection bins, event space.',
     targetAudience: 'All residents.',
     status: 'Under Review',
+    submittedBy: 'Charlie Brown',
+    submittedDate: '2024-06-15',
   },
   {
     id: 'p4',
@@ -83,6 +89,8 @@ export const proposals: Proposal[] = [
     resources: 'Volunteer coordination, background checks.',
     targetAudience: 'Seniors and volunteers.',
     status: 'Completed',
+    submittedBy: 'Diana Prince',
+    submittedDate: '2024-03-10',
   },
   {
     id: 'p5',
@@ -92,6 +100,19 @@ export const proposals: Proposal[] = [
     resources: 'Network hardware, installation services.',
     targetAudience: 'All residents.',
     status: 'Rejected',
+    submittedBy: 'Eve Adams',
+    submittedDate: '2024-04-22',
+  },
+  {
+    id: 'p6',
+    title: 'Outdoor Movie Nights',
+    description: 'Host a series of family-friendly movie nights in the central park during summer.',
+    goals: 'Provide free family entertainment, foster community bonding.',
+    resources: 'Projector, screen, sound system, movie licenses.',
+    targetAudience: 'Families with children, all residents.',
+    status: 'Under Review',
+    submittedBy: 'Frank Castle',
+    submittedDate: '2024-06-18',
   },
 ];
 
