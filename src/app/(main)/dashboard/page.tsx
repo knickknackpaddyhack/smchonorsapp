@@ -12,7 +12,7 @@ export default function DashboardPage() {
         <div>
           <h2 className="text-2xl font-bold font-headline">Welcome Back!</h2>
           <p className="text-muted-foreground">
-            Explore ongoing and upcoming community activities.
+            Explore your ongoing and upcoming activities.
           </p>
         </div>
         <Link href="/proposals/new">

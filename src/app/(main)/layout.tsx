@@ -36,9 +36,9 @@ function AppLogo() {
   return (
     <Link href="/dashboard" className="flex items-center gap-2">
       <div className="flex items-center justify-center h-8 w-8 bg-sidebar-foreground text-sidebar-background rounded-lg flex-shrink-0">
-          <span className="font-bold text-lg">E</span>
+          <span className="font-bold text-lg">H</span>
       </div>
-      <h1 className="text-xl font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline">EngageForward</h1>
+      <h1 className="text-xl font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline">Honors App</h1>
     </Link>
   )
 }
@@ -66,7 +66,7 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'EngageForward';
+  const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
 
   return (
     <SidebarProvider>

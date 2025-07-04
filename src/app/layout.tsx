@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'EngageForward',
-  description: 'Fostering community collaboration and engagement.',
+  title: 'Honors App',
+  description: 'Track your academic and extracurricular achievements.',
 };
 
 export default function RootLayout({
