@@ -2,8 +2,10 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
-import { getUserProfile, updateUserProfile, createUserProfile } from '@/services/user';
+import { updateUserProfile } from '@/services/user';
 import { useAuth } from './auth-context';
 import { useToast } from '@/hooks/use-toast';
 
@@ -11,7 +13,6 @@ interface UserContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   updateProfile: (newProfileData: Partial<Pick<UserProfile, 'name' | 'email'>>) => Promise<void>;
-  createProfile: (newProfileData: { name: string, email: string, photoURL?: string }) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -21,27 +22,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const { toast } = useToast();
-
-  const createProfile = useCallback(async (newProfileData: { name: string, email: string, photoURL?: string }) => {
-    if (!authUser) throw new Error("User is not authenticated.");
-    
-    setIsLoading(true);
-    try {
-      const newProfile = await createUserProfile(authUser.uid, newProfileData);
-      setProfile(newProfile);
-    } catch (error) {
-      console.error("Failed to create profile", error);
-      toast({
-          variant: 'destructive',
-          title: "Profile Creation Failed",
-          description: error instanceof Error ? error.message : "Could not create your profile. Please try again.",
-      });
-      setProfile(null); 
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, [authUser, toast]);
 
   useEffect(() => {
     const handleUserProfile = async () => {
@@ -53,23 +33,35 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
       setIsLoading(true);
       try {
-        let userProfile = await getUserProfile(authUser.uid);
-        
-        if (!userProfile) {
-          const newProfileData = {
+        const userRef = doc(db, 'users', authUser.uid);
+        const userSnap = await getDoc(userRef);
+
+        if (userSnap.exists()) {
+          const userProfile = { id: userSnap.id, ...userSnap.data() } as UserProfile;
+          setProfile(userProfile);
+        } else {
+          // Profile doesn't exist, create it right here.
+          const newProfile: UserProfile = {
+            id: authUser.uid,
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
             photoURL: authUser.photoURL || '',
+            joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            honorsPoints: 0,
+            engagements: [],
           };
-          userProfile = await createUserProfile(authUser.uid, newProfileData);
+          
+          const { id, ...profileToSave } = newProfile;
+          await setDoc(userRef, profileToSave);
+          
+          setProfile(newProfile);
         }
-        setProfile(userProfile);
       } catch (error) {
         console.error("Error handling user profile:", error);
         toast({
             variant: 'destructive',
             title: "Profile Error",
-            description: "Could not load or create your profile. Please try again.",
+            description: "Could not load or create your profile. Please check your Firestore security rules and configuration.",
         });
         setProfile(null);
       } finally {
@@ -77,8 +69,10 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    if (!isAuthLoading) {
+    if (!isAuthLoading && isFirebaseConfigured) {
       handleUserProfile();
+    } else if (!isFirebaseConfigured) {
+        setIsLoading(false);
     }
   }, [authUser, isAuthLoading, toast]);
   
@@ -97,7 +91,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <UserContext.Provider value={{ profile, isLoading, updateProfile, createProfile }}>
+    <UserContext.Provider value={{ profile, isLoading, updateProfile }}>
       {children}
     </UserContext.Provider>
   );
