@@ -32,7 +32,6 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserProvider, useUser } from '@/contexts/user-context';
 import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
-import { CreateProfilePage } from '@/components/app/create-profile-page';
 import { LoginPage } from '@/components/app/login-page';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
@@ -131,18 +130,15 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { profile, isLoading: isProfileLoading } = useUser();
 
   const renderContent = () => {
-    if (isAuthLoading || (authUser && isProfileLoading)) {
+    if (isAuthLoading || isProfileLoading) {
       return (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
     }
-    if (!authUser) {
+    if (!authUser || !profile) {
       return <LoginPage />;
-    }
-    if (!profile) {
-      return <CreateProfilePage />;
     }
     return children;
   };
