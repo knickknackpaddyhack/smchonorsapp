@@ -1,5 +1,5 @@
-import { initializeApp, getApps, getApp, FirebaseOptions } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from "firebase/app";
+import { getFirestore, Firestore } from "firebase/firestore";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,21 +10,21 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-function initializeFirebase() {
-    if (!firebaseConfig.projectId) {
-        console.warn("Firebase config not found, features requiring Firebase will be disabled or use mock data.");
-        return null;
-    }
-    
-    try {
-        return !getApps().length ? initializeApp(firebaseConfig) : getApp();
-    } catch (e) {
-        console.error("Failed to initialize Firebase", e);
-        return null;
-    }
-}
+let app: FirebaseApp | null = null;
+let db: Firestore | null = null;
 
-const app = initializeFirebase();
-const db = app ? getFirestore(app) : null;
+// This check ensures we only try to initialize Firebase
+// when the configuration is present.
+if (firebaseConfig.projectId) {
+  try {
+    app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    db = getFirestore(app);
+  } catch (e) {
+    console.error("Failed to initialize Firebase", e);
+    // Set to null so other parts of the app know initialization failed
+    app = null;
+    db = null;
+  }
+}
 
 export { app, db };
