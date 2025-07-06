@@ -6,13 +6,22 @@ import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 import { engagements as seedEngagementsData } from '@/lib/data';
 
-async function seedInitialUserEngagements(uid: string): Promise<number> {
-    if (!isFirebaseConfigured) return 0;
+// This function now handles seeding and awarding points.
+// It's designed to be called without being awaited ("fire and forget").
+async function seedEngagementsAndAwardPoints(uid: string): Promise<void> {
+    if (!isFirebaseConfigured) return;
 
     const engagementsColRef = collection(db!, 'users', uid, 'engagements');
     
     try {
-        console.log("Seeding engagement data for new user...");
+        // Check if engagements already exist to prevent re-seeding and re-awarding points
+        const existingEngagements = await getDocs(engagementsColRef);
+        if (!existingEngagements.empty) {
+            console.log("User already has engagements, skipping seed.");
+            return;
+        }
+
+        console.log("Seeding engagement data and awarding points for new user...");
         const batch = writeBatch(db!);
         let totalPoints = 0;
 
@@ -23,14 +32,16 @@ async function seedInitialUserEngagements(uid: string): Promise<number> {
             totalPoints += engagement.points;
         });
         
-        await batch.commit();
-        return totalPoints;
+        await batch.commit(); // Writes the engagements subcollection
+
+        // Now, update the user's profile with the points
+        const userRef = doc(db!, 'users', uid);
+        await updateDoc(userRef, { honorsPoints: totalPoints });
+
     } catch(error) {
-        console.error("Error seeding user engagements:", error);
-        if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
-            throw new Error("Profile creation failed while saving initial data. This is likely due to restrictive Firestore security rules for subcollections (e.g., /users/{userId}/engagements).");
-        }
-        throw new Error("Failed to seed initial user data.");
+        console.error("Error during background seeding of user engagements:", error);
+        // We don't throw here because this is a background process.
+        // The user is already logged in. An error here is not critical for the UI.
     }
 }
 
@@ -65,21 +76,26 @@ export async function createUserProfile(uid: string, profileData: { name: string
             return { id: userSnap.id, ...userSnap.data() } as UserProfile;
         }
 
-        const initialPoints = await seedInitialUserEngagements(uid);
-
+        // Create the user profile with 0 points first. This is a fast, simple write.
+        // This ensures the user document exists immediately, unblocking the login flow.
         const newProfile: UserProfile = {
             id: uid,
             name: profileData.name,
             email: profileData.email,
             photoURL: profileData.photoURL || '',
             joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-            honorsPoints: initialPoints,
+            honorsPoints: 0,
         };
         
         const { id, ...profileToSave } = newProfile;
         await setDoc(userRef, profileToSave);
 
-        return newProfile;
+        // After the critical profile document is created, start the background job
+        // to seed their initial engagement data and award points.
+        // We DO NOT await this, so the UI is not blocked.
+        seedEngagementsAndAwardPoints(uid);
+
+        return newProfile; // Return the profile immediately with 0 points.
     } catch (error) {
         console.error("Error creating user profile:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
