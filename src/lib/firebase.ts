@@ -13,18 +13,22 @@ const firebaseConfig: FirebaseOptions = {
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 
-// This check ensures we only try to initialize Firebase
-// when the configuration is present.
-if (firebaseConfig.projectId) {
+const missingKeys = Object.entries(firebaseConfig)
+  .filter(([, value]) => !value)
+  .map(([key]) => key);
+
+if (missingKeys.length === 0) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);
   } catch (e) {
     console.error("Failed to initialize Firebase", e);
-    // Set to null so other parts of the app know initialization failed
     app = null;
     db = null;
   }
+} else {
+    // This will only log on the server, which is where the problem is.
+    console.warn(`Firebase is not configured. Missing environment variables: ${missingKeys.join(', ')}. Please check your .env file.`);
 }
 
 export { app, db };
