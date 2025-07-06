@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 
@@ -16,8 +16,17 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
         if (userSnap.exists()) {
             const data = userSnap.data();
-            // Ensure engagements array exists for type safety, even if not in DB
-            return { id: userSnap.id, engagements: [], ...data } as UserProfile;
+            // Explicitly construct the profile object for type safety
+            const userProfile: UserProfile = {
+                id: userSnap.id,
+                name: data.name || 'Anonymous',
+                email: data.email || '',
+                photoURL: data.photoURL || '',
+                joinedDate: data.joinedDate || new Date().toLocaleDateString(),
+                honorsPoints: data.honorsPoints || 0,
+                engagements: Array.isArray(data.engagements) ? data.engagements : [],
+            };
+            return userProfile;
         }
         return null;
     } catch (error) {

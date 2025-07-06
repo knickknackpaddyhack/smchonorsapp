@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
@@ -37,8 +37,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-          const userProfile = { id: userSnap.id, ...userSnap.data() } as UserProfile;
-          setProfile(userProfile);
+            const data = userSnap.data();
+            // Explicitly construct the profile object for type safety
+            const userProfile: UserProfile = {
+                id: userSnap.id,
+                name: data.name || 'Anonymous',
+                email: data.email || '',
+                photoURL: data.photoURL || '',
+                joinedDate: data.joinedDate || new Date().toLocaleDateString(),
+                honorsPoints: data.honorsPoints || 0,
+                engagements: Array.isArray(data.engagements) ? data.engagements : [],
+            };
+            setProfile(userProfile);
         } else {
           // Profile doesn't exist, create it right here.
           const newProfile: UserProfile = {
