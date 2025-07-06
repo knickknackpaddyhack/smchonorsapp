@@ -33,7 +33,7 @@ export async function createUserProfile(uid: string, profileData: { name: string
     try {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            console.log("Attempted to create profile for existing user. Returning existing profile.");
+            console.warn("Attempted to create profile for existing user. Returning existing profile.");
             return { id: userSnap.id, ...userSnap.data() } as UserProfile;
         }
 
@@ -51,9 +51,9 @@ export async function createUserProfile(uid: string, profileData: { name: string
 
         return newProfile;
     } catch (error) {
-        console.error("Error creating user profile:", error);
+        console.error("CRITICAL ERROR creating user profile:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
-            throw new Error("Creation failed: Permission Denied. Please check your Firestore security rules in the Firebase console. They may be too restrictive.");
+            throw new Error("Creation failed: Permission Denied. Your Firestore security rules are likely too restrictive. Please check them in the Firebase console.");
         }
         throw new Error("An unknown server error occurred while creating the profile.");
     }
