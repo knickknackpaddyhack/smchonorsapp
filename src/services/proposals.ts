@@ -72,7 +72,10 @@ export async function addProposal(proposalData: NewProposalData): Promise<void> 
         await addDoc(proposalsColRef, newProposalDoc);
     } catch (error) {
         console.error("Error adding proposal:", error);
-        throw new Error("Failed to submit proposal.");
+        if (error instanceof Error) {
+            throw new Error(error.message);
+        }
+        throw new Error("An unknown error occurred while adding the proposal.");
     }
 }
 

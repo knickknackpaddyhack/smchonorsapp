@@ -71,7 +71,7 @@ export default function NewProposalPage() {
       toast({
         variant: 'destructive',
         title: "Submission Failed",
-        description: "Could not submit your proposal. Please try again.",
+        description: error instanceof Error ? error.message : "Could not submit your proposal. Please try again.",
       });
     } finally {
       setIsSubmitting(false);
