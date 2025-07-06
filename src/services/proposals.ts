@@ -71,11 +71,17 @@ export async function addProposal(proposalData: NewProposalData): Promise<void> 
         };
         await addDoc(proposalsColRef, newProposalDoc);
     } catch (error) {
-        console.error("Error adding proposal:", error);
-        if (error instanceof Error) {
-            throw new Error(error.message);
+        console.error("--- DETAILED FIREBASE ERROR ---");
+        console.error(error);
+        console.error("-------------------------------");
+        
+        if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
+             throw new Error("Submission failed: Permission denied. Please check your Firestore security rules in the Firebase console.");
+        } else if (error instanceof Error) {
+            throw new Error(`Submission failed due to a server error: ${error.message}`);
         }
-        throw new Error("An unknown error occurred while adding the proposal.");
+        
+        throw new Error("An unknown error occurred while adding the proposal. Check server logs for details.");
     }
 }
 

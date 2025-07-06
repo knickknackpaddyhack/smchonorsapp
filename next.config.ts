@@ -1,8 +1,5 @@
 import type {NextConfig} from 'next';
 
-// Explicitly load env variables from the .env file in the root directory.
-require('dotenv').config();
-
 const nextConfig: NextConfig = {
   typescript: {
     ignoreBuildErrors: true,
