@@ -46,7 +46,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     }
 }
 
-export async function createUserProfile(uid: string, profileData: Pick<UserProfile, 'name' | 'email'>): Promise<void> {
+export async function createUserProfile(uid: string, profileData: { name: string, email: string, photoURL?: string }): Promise<UserProfile> {
     if (!isFirebaseConfigured) {
         throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(',')}. Please check your .env file.`);
     }
@@ -54,21 +54,25 @@ export async function createUserProfile(uid: string, profileData: Pick<UserProfi
         const userRef = doc(db!, 'users', uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            // Profile already exists, no need to create or seed.
-            return;
+            // Profile already exists, return it to avoid re-creating/overwriting.
+            return { id: userSnap.id, ...userSnap.data() } as UserProfile;
         }
 
         const initialPoints = await seedInitialUserEngagements(uid);
 
-        const newProfile: Omit<UserProfile, 'id'> = {
+        const newProfile: UserProfile = {
+            id: uid,
             name: profileData.name,
             email: profileData.email,
             photoURL: profileData.photoURL || '',
             joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
             honorsPoints: initialPoints,
         };
+        
+        const { id, ...profileToSave } = newProfile;
+        await setDoc(userRef, profileToSave);
 
-        await setDoc(userRef, newProfile);
+        return newProfile;
     } catch (error) {
         console.error("Error creating user profile:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {

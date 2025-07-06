@@ -62,12 +62,17 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   const createProfile = async (newProfileData: { name: string, email: string, photoURL?: string }) => {
     if (!authUser) throw new Error("User is not authenticated.");
+    
+    setIsLoading(true);
     try {
-      await createUserProfile(authUser.uid, newProfileData);
-      await fetchProfile(); // Re-fetch profile after creation
+      const newProfile = await createUserProfile(authUser.uid, newProfileData);
+      setProfile(newProfile);
     } catch (error) {
       console.error("Failed to create profile", error);
+      setProfile(null); 
       throw error;
+    } finally {
+      setIsLoading(false);
     }
   };
 

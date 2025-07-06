@@ -50,7 +50,7 @@ function AppLogo() {
       <div className="flex items-center justify-center h-8 w-8 bg-sidebar-accent text-sidebar-accent-foreground rounded-lg flex-shrink-0">
           <Award className="h-5 w-5" />
       </div>
-      <h1 className="text-xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline tracking-tight">EngageForward</h1>
+      <h1 className="text-xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline tracking-tight">Honors App</h1>
     </Link>
   )
 }
@@ -125,7 +125,7 @@ function UserMenu() {
 
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'EngageForward';
+  const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
   
   const { user: authUser, isLoading: isAuthLoading } = useAuth();
   const { profile, isLoading: isProfileLoading } = useUser();

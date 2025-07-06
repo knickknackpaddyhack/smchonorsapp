@@ -4,7 +4,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'EngageForward',
+  title: 'Honors App',
   description: 'A community engagement platform.',
 };
 
