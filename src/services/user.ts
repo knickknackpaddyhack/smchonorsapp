@@ -1,23 +1,17 @@
+
 'use server';
 
-import { doc, getDoc, setDoc, collection, getDocs, writeBatch, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, getDocs, writeBatch, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 import { engagements as seedEngagementsData } from '@/lib/data';
 
-const USER_ID = 'user123'; // Hardcoded for demo purposes
-
-async function seedUserEngagements() {
+async function seedUserEngagements(uid: string) {
     if (!isFirebaseConfigured) return;
 
-    const engagementsColRef = collection(db!, 'users', USER_ID, 'engagements');
-    const engagementsSnap = await getDocs(engagementsColRef);
-
-    if (!engagementsSnap.empty) {
-        return; // Data already exists
-    }
-
-    console.log("Seeding engagement data for demo user...");
+    const engagementsColRef = collection(db!, 'users', uid, 'engagements');
+    
+    console.log("Seeding engagement data for new user...");
     const batch = writeBatch(db!);
     let totalPoints = 0;
 
@@ -28,26 +22,22 @@ async function seedUserEngagements() {
         totalPoints += engagement.points;
     });
 
-    const userRef = doc(db!, 'users', USER_ID);
+    const userRef = doc(db!, 'users', uid);
     batch.update(userRef, { honorsPoints: totalPoints });
     
     await batch.commit();
 }
 
 
-export async function getUserProfile(): Promise<UserProfile | null> {
+export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     if (!isFirebaseConfigured) {
-        return {
-            id: USER_ID,
-            name: 'Community Member',
-            email: 'member@email.com (offline)',
-            joinedDate: 'January 1, 2023',
-            honorsPoints: 75
-        };
+        // This case is for local development without firebase credentials.
+        // It should not be hit if firebase is configured.
+        return null;
     }
     
     try {
-        const userRef = doc(db!, 'users', USER_ID);
+        const userRef = doc(db!, 'users', uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
@@ -60,12 +50,12 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     }
 }
 
-export async function createUserProfile(profileData: Pick<UserProfile, 'name' | 'email'>): Promise<void> {
+export async function createUserProfile(uid: string, profileData: Pick<UserProfile, 'name' | 'email'>): Promise<void> {
     if (!isFirebaseConfigured) {
         throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(',')}. Please check your .env file.`);
     }
     try {
-        const userRef = doc(db!, 'users', USER_ID);
+        const userRef = doc(db!, 'users', uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
             throw new Error("User profile already exists.");
@@ -78,7 +68,7 @@ export async function createUserProfile(profileData: Pick<UserProfile, 'name' | 
             honorsPoints: 0,
         };
         await setDoc(userRef, newProfile);
-        await seedUserEngagements(); // Seed engagements for the new user
+        await seedUserEngagements(uid); // Seed engagements for the new user
     } catch (error) {
         console.error("Error creating user profile:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
@@ -89,12 +79,12 @@ export async function createUserProfile(profileData: Pick<UserProfile, 'name' | 
 }
 
 
-export async function updateUserProfile(profileData: Partial<Omit<UserProfile, 'id'>>): Promise<void> {
+export async function updateUserProfile(uid: string, profileData: Partial<Omit<UserProfile, 'id'>>): Promise<void> {
    if (!isFirebaseConfigured) {
      throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(', ')}. Please check your root .env file.`);
    }
    try {
-    const userRef = doc(db!, 'users', USER_ID);
+    const userRef = doc(db!, 'users', uid);
     await updateDoc(userRef, profileData);
    } catch (error) {
      console.error("Error updating user profile:", error);
@@ -102,27 +92,26 @@ export async function updateUserProfile(profileData: Partial<Omit<UserProfile, '
    }
 }
 
-export async function getUserEngagements(): Promise<Engagement[]> {
+export async function getUserEngagements(uid: string): Promise<Engagement[]> {
     if (!isFirebaseConfigured) {
         return seedEngagementsData;
     }
 
     try {
-        await seedUserEngagements();
-        const engagementsColRef = collection(db!, 'users', USER_ID, 'engagements');
-        const querySnapshot = await getDocs(engagementsColRef);
+        const engagementsColRef = collection(db!, 'users', uid, 'engagements');
+        const q = query(engagementsColRef, orderBy('date', 'desc'));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            return [];
+        }
+
         const engagements = querySnapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         } as Engagement));
         
-        return engagements.sort((a, b) => {
-            const dateA = new Date(a.date).getTime();
-            const dateB = new Date(b.date).getTime();
-            if (isNaN(dateA)) return 1; // Put invalid dates at the end
-            if (isNaN(dateB)) return -1;
-            return dateB - dateA;
-        });
+        return engagements;
     } catch (error) {
         console.error("Error fetching engagements:", error);
         return []; // Return empty on error

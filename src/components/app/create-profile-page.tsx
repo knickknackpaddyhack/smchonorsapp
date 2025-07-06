@@ -1,11 +1,12 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useUser } from '@/contexts/user-context';
+import { useAuth } from '@/contexts/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -20,16 +21,26 @@ const profileSchema = z.object({
 
 export function CreateProfilePage() {
   const { toast } = useToast();
+  const { user: authUser } = useAuth();
   const { createProfile } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof profileSchema>>({
     resolver: zodResolver(profileSchema),
     defaultValues: {
-      name: 'Alex Doe',
-      email: 'alex.doe@example.com',
+      name: '',
+      email: '',
     },
   });
+
+  useEffect(() => {
+      if (authUser) {
+          form.reset({
+              name: authUser.displayName || '',
+              email: authUser.email || '',
+          });
+      }
+  }, [authUser, form]);
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
     setIsSubmitting(true);
@@ -82,7 +93,7 @@ export function CreateProfilePage() {
                   <FormItem>
                     <FormLabel>Email Address</FormLabel>
                     <FormControl>
-                      <Input type="email" placeholder="your.email@example.com" {...field} />
+                      <Input type="email" placeholder="your.email@example.com" {...field} readOnly />
                     </FormControl>
                     <FormMessage />
                   </FormItem>

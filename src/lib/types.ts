@@ -1,3 +1,4 @@
+
 export interface Activity {
   id: string;
   title: string;
@@ -30,6 +31,7 @@ export interface UserProfile {
   id: string;
   name: string;
   email: string;
+  photoURL?: string;
   joinedDate: string;
   honorsPoints: number;
 }

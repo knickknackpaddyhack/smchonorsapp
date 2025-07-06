@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -11,6 +12,7 @@ import {
   Shield,
   Award,
   Loader2,
+  LogOut,
 } from 'lucide-react';
 
 import {
@@ -28,8 +30,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserProvider, useUser } from '@/contexts/user-context';
+import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CreateProfilePage } from '@/components/app/create-profile-page';
+import { LoginPage } from '@/components/app/login-page';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 
 const menuItems = [
   { href: '/dashboard', label: 'Activity Dashboard', icon: LayoutDashboard },
@@ -67,18 +72,74 @@ function TopBar({pageTitle}: {pageTitle: string}) {
   )
 }
 
+function UserMenu() {
+    const { signOut } = useAuth();
+    const { profile, isLoading } = useUser();
+
+    if (isLoading) {
+        return (
+             <div className="flex items-center gap-3">
+                <Avatar>
+                    <AvatarFallback>CM</AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                    <Skeleton className="h-4 w-24 mb-1" />
+                    <Skeleton className="h-3 w-32" />
+                </div>
+              </div>
+        )
+    }
+
+    if (!profile) return null;
+
+    return (
+        <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+                 <div className="flex items-center gap-3 cursor-pointer">
+                    <Avatar>
+                        <AvatarImage src={profile.photoURL || `https://placehold.co/40x40.png`} alt={profile.name} data-ai-hint="person face" />
+                        <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                        <span className="text-sm font-semibold text-sidebar-foreground">{profile.name}</span>
+                        <span className="text-xs text-sidebar-foreground/70">{profile.email}</span>
+                    </div>
+                </div>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent side="top" align="start" className="w-56">
+                <DropdownMenuItem asChild>
+                     <Link href="/profile">
+                        <User className="mr-2 h-4 w-4" />
+                        My Profile
+                    </Link>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                    <LogOut className="mr-2 h-4 w-4" />
+                    Sign Out
+                </DropdownMenuItem>
+            </DropdownMenuContent>
+        </DropdownMenu>
+    )
+}
+
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
-  const { profile, isLoading } = useUser();
+  
+  const { user: authUser, isLoading: isAuthLoading } = useAuth();
+  const { profile, isLoading: isProfileLoading } = useUser();
 
   const renderContent = () => {
-    if (isLoading) {
+    if (isAuthLoading || (authUser && isProfileLoading)) {
       return (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
+    }
+    if (!authUser) {
+      return <LoginPage />;
     }
     if (!profile) {
       return <CreateProfilePage />;
@@ -107,43 +168,11 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
           </SidebarMenu>
         </SidebarContent>
         <SidebarFooter>
-          <div className="flex items-center gap-3">
-             {isLoading ? (
-                <>
-                  <Avatar>
-                      <AvatarFallback>CM</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                      <Skeleton className="h-4 w-24 mb-1" />
-                      <Skeleton className="h-3 w-32" />
-                  </div>
-                </>
-             ) : profile ? (
-                <>
-                  <Avatar>
-                      <AvatarImage src="https://placehold.co/40x40.png" alt={profile.name} data-ai-hint="person face" />
-                      <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                      <span className="text-sm font-semibold text-sidebar-foreground">{profile.name}</span>
-                      <span className="text-xs text-sidebar-foreground/70">{profile.email}</span>
-                  </div>
-                </>
-             ) : (
-                <div className="flex items-center gap-3">
-                  <Avatar>
-                      <AvatarFallback>??</AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                      <span className="text-sm font-semibold text-sidebar-foreground">No Profile</span>
-                  </div>
-                </div>
-             )}
-          </div>
+          <UserMenu />
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <TopBar pageTitle={pageTitle} />
+        { authUser && profile && <TopBar pageTitle={pageTitle} /> }
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-background">
           {renderContent()}
         </main>
@@ -158,8 +187,10 @@ export default function MainLayout({
   children: React.ReactNode;
 }) {
   return (
-    <UserProvider>
-      <LayoutContent>{children}</LayoutContent>
-    </UserProvider>
+    <AuthProvider>
+        <UserProvider>
+            <LayoutContent>{children}</LayoutContent>
+        </UserProvider>
+    </AuthProvider>
   );
 }

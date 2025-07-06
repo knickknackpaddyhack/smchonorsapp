@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState } from 'react';
@@ -16,6 +17,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from "@/hooks/use-toast";
 import { addProposal } from '@/services/proposals';
 import { cn } from '@/lib/utils';
+import { useUser } from '@/contexts/user-context';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -36,6 +38,7 @@ const eventTypes: { name: ProposalEventType, icon: React.ElementType, descriptio
 export default function NewProposalPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { profile } = useUser();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [step, setStep] = useState(1);
   const [eventType, setEventType] = useState<ProposalEventType | null>(null);
@@ -57,12 +60,12 @@ export default function NewProposalPage() {
   }
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
-    if (!eventType) return;
+    if (!eventType || !profile) return;
     setIsSubmitting(true);
     try {
       const plainValues = { ...values, eventType };
       
-      await addProposal(plainValues);
+      await addProposal(plainValues, profile.name);
       
       toast({
         title: "Proposal Submitted!",

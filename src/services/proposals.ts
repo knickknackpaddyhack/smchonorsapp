@@ -1,11 +1,10 @@
+
 'use server';
 
 import { collection, doc, getDocs, setDoc, writeBatch, getDoc, addDoc, serverTimestamp, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { Proposal } from '@/lib/types';
 import { proposals as seedProposals } from '@/lib/data';
-
-const USER_NAME = 'Community Member'; // Hardcoded for demo purposes
 
 // A function to check and seed data for proposals if they don't exist.
 async function seedInitialProposals() {
@@ -53,21 +52,16 @@ export async function getProposals(): Promise<Proposal[]> {
 
 type NewProposalData = Omit<Proposal, 'id' | 'status' | 'submittedBy' | 'submittedDate'>;
 
-export async function addProposal(proposalData: NewProposalData): Promise<void> {
+export async function addProposal(proposalData: NewProposalData, userName: string): Promise<void> {
     if (!isFirebaseConfigured) {
         throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(', ')}. Please check your root .env file.`);
     }
     try {
         const proposalsColRef = collection(db!, 'proposals');
         const newProposalDoc = {
-            title: proposalData.title,
-            eventType: proposalData.eventType,
-            description: proposalData.description,
-            goals: proposalData.goals,
-            resources: proposalData.resources,
-            targetAudience: proposalData.targetAudience,
+            ...proposalData,
             status: 'Under Review' as const,
-            submittedBy: USER_NAME,
+            submittedBy: userName,
             submittedDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
         };
         await addDoc(proposalsColRef, newProposalDoc);

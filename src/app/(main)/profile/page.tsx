@@ -1,3 +1,4 @@
+
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
@@ -12,6 +13,7 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserEngagements } from '@/services/user';
 import { useUser } from '@/contexts/user-context';
+import { useAuth } from '@/contexts/auth-context';
 import { Badge } from '@/components/ui/badge';
 
 function getIconForEngagement(type: Engagement['type']) {
@@ -34,6 +36,7 @@ const benchmarks = [
 
 export default function ProfilePage() {
     const { toast } = useToast();
+    const { user: authUser } = useAuth();
     const { profile, isLoading: isProfileLoading, updateProfile } = useUser();
     const [engagements, setEngagements] = useState<Engagement[]>([]);
     const [isEngagementsLoading, setIsEngagementsLoading] = useState(true);
@@ -43,13 +46,14 @@ export default function ProfilePage() {
 
     useEffect(() => {
         async function loadEngagements() {
+            if (!authUser) return;
             setIsEngagementsLoading(true);
-            const engagementsData = await getUserEngagements();
+            const engagementsData = await getUserEngagements(authUser.uid);
             setEngagements(engagementsData);
             setIsEngagementsLoading(false);
         }
         loadEngagements();
-    }, []);
+    }, [authUser]);
 
     useEffect(() => {
         if (profile) {
@@ -153,7 +157,7 @@ export default function ProfilePage() {
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex flex-col sm:flex-row items-center gap-4">
                         <Avatar className="h-20 w-20 border-2 border-primary/10">
-                            <AvatarImage src={`https://placehold.co/80x80.png`} alt={profile.name} data-ai-hint="person face" />
+                            <AvatarImage src={profile.photoURL || `https://placehold.co/80x80.png`} alt={profile.name} data-ai-hint="person face" />
                             <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="text-center sm:text-left">
@@ -171,6 +175,7 @@ export default function ProfilePage() {
                                         value={tempEmail}
                                         onChange={(e) => setTempEmail(e.target.value)}
                                         className="text-muted-foreground"
+                                        readOnly
                                     />
                                 </div>
                             ) : (
@@ -254,6 +259,11 @@ export default function ProfilePage() {
                         <Skeleton className="h-16 w-full" />
                         <Skeleton className="h-16 w-full" />
                         <Skeleton className="h-16 w-full" />
+                    </div>
+                ) : engagements.length === 0 ? (
+                    <div className="text-center text-muted-foreground py-10">
+                        <p>No engagement history yet.</p>
+                        <p className="text-sm">Participate in events or submit proposals to get started!</p>
                     </div>
                 ) : (
                     <ul className="space-y-4">

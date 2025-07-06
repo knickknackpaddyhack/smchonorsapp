@@ -1,5 +1,6 @@
 import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
+import { getAuth, Auth } from "firebase/auth";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -10,8 +11,9 @@ const firebaseConfig: FirebaseOptions = {
   appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
 };
 
-let app: FirebaseApp | null = null;
-let db: Firestore | null = null;
+let app: FirebaseApp;
+let auth: Auth;
+let db: Firestore;
 
 export const missingKeys = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
@@ -22,15 +24,14 @@ export const isFirebaseConfigured = missingKeys.length === 0;
 if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
+    auth = getAuth(app);
     db = getFirestore(app);
   } catch (e) {
     console.error("Failed to initialize Firebase", e);
-    app = null;
-    db = null;
   }
 } else {
     // This will only log on the server, which is where the problem is.
     console.warn(`Firebase is not configured. Missing environment variables: ${missingKeys.join(', ')}. Please check your .env file.`);
 }
 
-export { app, db };
+export { app, auth, db };
