@@ -61,6 +61,7 @@ export async function addProposal(proposalData: NewProposalData): Promise<void> 
         const proposalsColRef = collection(db!, 'proposals');
         const newProposalDoc = {
             title: proposalData.title,
+            eventType: proposalData.eventType,
             description: proposalData.description,
             goals: proposalData.goals,
             resources: proposalData.resources,

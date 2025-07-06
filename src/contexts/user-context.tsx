@@ -2,12 +2,13 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { UserProfile } from '@/lib/types';
-import { getUserProfile, updateUserProfile } from '@/services/user';
+import { getUserProfile, updateUserProfile, createUserProfile } from '@/services/user';
 
 interface UserContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   updateProfile: (newProfileData: Partial<Pick<UserProfile, 'name' | 'email'>>) => Promise<void>;
+  createProfile: (newProfileData: Pick<UserProfile, 'name' | 'email'>) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -47,8 +48,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const createProfile = async (newProfileData: Pick<UserProfile, 'name' | 'email'>) => {
+    try {
+      await createUserProfile(newProfileData);
+      await fetchProfile(); // Re-fetch profile after creation
+    } catch (error) {
+      console.error("Failed to create profile", error);
+      throw error;
+    }
+  };
+
   return (
-    <UserContext.Provider value={{ profile, isLoading, updateProfile }}>
+    <UserContext.Provider value={{ profile, isLoading, updateProfile, createProfile }}>
       {children}
     </UserContext.Provider>
   );

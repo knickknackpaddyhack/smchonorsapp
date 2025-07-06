@@ -51,6 +51,7 @@ export const proposals: Proposal[] = [
   {
     id: 'p1',
     title: 'Weekly Yoga in the Park',
+    eventType: 'Social Event',
     description: 'A proposal for free weekly yoga sessions to promote health and wellness.',
     goals: 'Improve community health, foster connections.',
     resources: 'Yoga mats, certified instructor.',
@@ -62,6 +63,7 @@ export const proposals: Proposal[] = [
   {
     id: 'p2',
     title: 'Coding Bootcamp for Teens',
+    eventType: 'Academic Event',
     description: 'An intensive coding bootcamp to equip teenagers with valuable tech skills.',
     goals: 'Provide tech education, prepare for future careers.',
     resources: 'Laptops, classroom space, experienced instructors.',
@@ -73,6 +75,7 @@ export const proposals: Proposal[] = [
   {
     id: 'p3',
     title: 'Community-wide Book Swap',
+    eventType: 'Social Event',
     description: 'An event for residents to exchange books and promote reading.',
     goals: 'Encourage reading, build a literary community.',
     resources: 'Collection bins, event space.',
@@ -84,6 +87,7 @@ export const proposals: Proposal[] = [
   {
     id: 'p4',
     title: 'Senior Companion Program',
+    eventType: 'Service Event',
     description: 'A program to pair volunteers with seniors for companionship and support.',
     goals: 'Combat loneliness among seniors, foster intergenerational bonds.',
     resources: 'Volunteer coordination, background checks.',
@@ -95,6 +99,7 @@ export const proposals: Proposal[] = [
   {
     id: 'p5',
     title: 'Expand Public Wi-Fi',
+    eventType: 'Service Event',
     description: 'Proposal to expand free public Wi-Fi to more parks and public spaces.',
     goals: 'Increase digital equity.',
     resources: 'Network hardware, installation services.',
@@ -106,6 +111,7 @@ export const proposals: Proposal[] = [
   {
     id: 'p6',
     title: 'Outdoor Movie Nights',
+    eventType: 'Social Event',
     description: 'Host a series of family-friendly movie nights in the central park during summer.',
     goals: 'Provide free family entertainment, foster community bonding.',
     resources: 'Projector, screen, sound system, movie licenses.',

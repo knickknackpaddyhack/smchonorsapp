@@ -1,27 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, PartyPopper, HeartHandshake, GraduationCap, Presentation, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
+import type { ProposalEventType } from '@/lib/types';
 import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
 import { addProposal } from '@/services/proposals';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
@@ -31,10 +25,20 @@ const formSchema = z.object({
   targetAudience: z.string(),
 });
 
+const eventTypes: { name: ProposalEventType, icon: React.ElementType, description: string }[] = [
+    { name: 'Social Event', icon: PartyPopper, description: 'Engage the community with fun, informal gatherings.' },
+    { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.' },
+    { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with workshops, lectures, or study groups.' },
+    { name: 'Colloquium', icon: Presentation, description: 'Share knowledge through formal presentations or discussions.' },
+];
+
+
 export default function NewProposalPage() {
   const { toast } = useToast();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [step, setStep] = useState(1);
+  const [eventType, setEventType] = useState<ProposalEventType | null>(null);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -47,17 +51,16 @@ export default function NewProposalPage() {
     },
   });
 
+  function selectEventType(type: ProposalEventType) {
+    setEventType(type);
+    setStep(2);
+  }
+
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!eventType) return;
     setIsSubmitting(true);
     try {
-      // Ensure the data passed to the server action is a plain object
-      const plainValues = {
-        title: values.title,
-        description: values.description,
-        goals: values.goals,
-        resources: values.resources,
-        targetAudience: values.targetAudience,
-      };
+      const plainValues = { ...values, eventType };
       
       await addProposal(plainValues);
       
@@ -78,13 +81,57 @@ export default function NewProposalPage() {
     }
   }
 
+  if (step === 1) {
+      return (
+          <Card className="max-w-3xl mx-auto">
+              <CardHeader>
+                  <CardTitle className="font-headline text-2xl">Submit a New Proposal</CardTitle>
+                  <CardDescription>
+                      To get started, please select the type of event you are proposing.
+                  </CardDescription>
+              </CardHeader>
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {eventTypes.map(({ name, icon: Icon, description }) => (
+                      <button
+                          key={name}
+                          onClick={() => selectEventType(name)}
+                          className={cn(
+                              "p-6 border rounded-lg text-left hover:bg-muted/50 hover:border-primary/50 transition-all",
+                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          )}
+                      >
+                          <div className="flex items-center gap-4">
+                              <Icon className="h-8 w-8 text-primary" />
+                              <h3 className="text-lg font-semibold">{name}</h3>
+                          </div>
+                          <p className="text-sm text-muted-foreground mt-2">{description}</p>
+                      </button>
+                  ))}
+              </CardContent>
+          </Card>
+      )
+  }
+
+  const SelectedIcon = eventTypes.find(e => e.name === eventType)?.icon || PartyPopper;
+
   return (
     <Card className="max-w-3xl mx-auto">
       <CardHeader>
-        <CardTitle className="font-headline text-2xl">Submit a New Proposal</CardTitle>
-        <CardDescription>
-          Share your event idea. Fill out the form below to get started.
-        </CardDescription>
+        <div className="flex items-start justify-between">
+            <div>
+                <CardTitle className="font-headline text-2xl flex items-center gap-3">
+                    <SelectedIcon className="h-6 w-6 text-primary" />
+                    New {eventType} Proposal
+                </CardTitle>
+                <CardDescription>
+                Share your idea by filling out the form below.
+                </CardDescription>
+            </div>
+            <Button variant="outline" size="sm" onClick={() => setStep(1)}>
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back
+            </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <Form {...form}>

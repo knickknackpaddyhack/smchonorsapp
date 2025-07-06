@@ -10,6 +10,7 @@ import {
   Github,
   Shield,
   Award,
+  Loader2,
 } from 'lucide-react';
 
 import {
@@ -28,6 +29,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { UserProvider, useUser } from '@/contexts/user-context';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CreateProfilePage } from '@/components/app/create-profile-page';
 
 const menuItems = [
   { href: '/dashboard', label: 'Activity Dashboard', icon: LayoutDashboard },
@@ -69,6 +71,20 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
   const { profile, isLoading } = useUser();
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    if (!profile) {
+      return <CreateProfilePage />;
+    }
+    return children;
+  };
 
   return (
     <SidebarProvider>
@@ -119,7 +135,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
                       <AvatarFallback>??</AvatarFallback>
                   </Avatar>
                   <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                      <span className="text-sm font-semibold text-sidebar-foreground">User not found</span>
+                      <span className="text-sm font-semibold text-sidebar-foreground">No Profile</span>
                   </div>
                 </div>
              )}
@@ -129,7 +145,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       <SidebarInset>
         <TopBar pageTitle={pageTitle} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-background">
-          {children}
+          {renderContent()}
         </main>
       </SidebarInset>
     </SidebarProvider>

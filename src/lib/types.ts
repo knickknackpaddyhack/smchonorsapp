@@ -11,9 +11,12 @@ export interface Activity {
   aiHint: string;
 }
 
+export type ProposalEventType = 'Social Event' | 'Service Event' | 'Academic Event' | 'Colloquium';
+
 export interface Proposal {
   id: string;
   title: string;
+  eventType: ProposalEventType;
   description: string;
   goals: string;
   resources: string;
