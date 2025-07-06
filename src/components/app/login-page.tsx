@@ -16,7 +16,7 @@ export function LoginPage() {
           <div className="mx-auto flex items-center justify-center h-16 w-16 bg-primary text-primary-foreground rounded-full mb-4">
               <Award className="h-8 w-8" />
           </div>
-          <CardTitle className="font-headline text-3xl">Welcome to EngageForward</CardTitle>
+          <CardTitle className="font-headline text-3xl">Welcome to Honors App</CardTitle>
           <CardDescription>
             Sign in to continue to your account.
           </CardDescription>

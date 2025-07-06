@@ -66,7 +66,7 @@ export function CreateProfilePage() {
     <div className="flex items-center justify-center h-full">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Welcome to EngageForward!</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to Honors App!</CardTitle>
           <CardDescription>
             It looks like you're new here. Let's create your profile to get started.
           </CardDescription>
