@@ -34,6 +34,7 @@ export interface UserProfile {
   photoURL?: string;
   joinedDate: string;
   honorsPoints: number;
+  engagements: Engagement[];
 }
 
 export interface Engagement {

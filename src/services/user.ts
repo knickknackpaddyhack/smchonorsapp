@@ -1,7 +1,7 @@
 
 'use server';
 
-import { doc, getDoc, setDoc, collection, getDocs, writeBatch, updateDoc, query, orderBy } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
 import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 
@@ -15,7 +15,9 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-            return { id: userSnap.id, ...userSnap.data() } as UserProfile;
+            const data = userSnap.data();
+            // Ensure engagements array exists for type safety, even if not in DB
+            return { id: userSnap.id, engagements: [], ...data } as UserProfile;
         }
         return null;
     } catch (error) {
@@ -34,7 +36,8 @@ export async function createUserProfile(uid: string, profileData: { name: string
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
             console.warn("Attempted to create profile for existing user. Returning existing profile.");
-            return { id: userSnap.id, ...userSnap.data() } as UserProfile;
+            const data = userSnap.data();
+            return { id: userSnap.id, engagements: [], ...data } as UserProfile;
         }
 
         const newProfile: UserProfile = {
@@ -44,11 +47,10 @@ export async function createUserProfile(uid: string, profileData: { name: string
             photoURL: profileData.photoURL || '',
             joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
             honorsPoints: 0,
+            engagements: [], // Initialize with an empty engagements array
         };
         
         const { id, ...profileToSave } = newProfile;
-        // Perform a simple, single set operation to create the user profile.
-        // This is the most reliable way to ensure the document is created.
         await setDoc(userRef, profileToSave);
 
         return newProfile;
@@ -62,7 +64,7 @@ export async function createUserProfile(uid: string, profileData: { name: string
 }
 
 
-export async function updateUserProfile(uid: string, profileData: Partial<Omit<UserProfile, 'id'>>): Promise<void> {
+export async function updateUserProfile(uid: string, profileData: Partial<Omit<UserProfile, 'id' | 'engagements'>>): Promise<void> {
    if (!isFirebaseConfigured) {
      throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(', ')}. Please check your root .env file.`);
    }
@@ -84,22 +86,14 @@ export async function getUserEngagements(uid: string): Promise<Engagement[]> {
     }
 
     try {
-        const engagementsColRef = collection(db!, 'users', uid, 'engagements');
-        const q = query(engagementsColRef, orderBy('date', 'desc'));
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            return [];
+        const userProfile = await getUserProfile(uid);
+        if (userProfile && Array.isArray(userProfile.engagements)) {
+            // Sort engagements by date, descending
+            return userProfile.engagements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         }
-
-        const engagements = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        } as Engagement));
-        
-        return engagements;
+        return [];
     } catch (error) {
-        console.error("Error fetching engagements:", error);
+        console.error("Error fetching engagements from user profile:", error);
         return []; // Return empty on error
     }
 }
