@@ -1,4 +1,6 @@
-import { doc, getDoc, setDoc, collection, getDocs, writeBatch, DocumentData } from 'firebase/firestore';
+'use server';
+
+import { doc, getDoc, setDoc, collection, getDocs, writeBatch, DocumentData, updateDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 import { engagements as seedEngagementsData } from '@/lib/data';
@@ -76,7 +78,7 @@ export async function updateUserProfile(profileData: Partial<Omit<UserProfile, '
    }
    try {
     const userRef = doc(db, 'users', USER_ID);
-    await setDoc(userRef, profileData, { merge: true });
+    await updateDoc(userRef, profileData);
    } catch (error) {
      console.error("Error updating user profile:", error);
      throw new Error("Failed to update profile.");
