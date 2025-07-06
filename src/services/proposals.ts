@@ -3,12 +3,12 @@
 import { collection, doc, getDocs, setDoc, writeBatch, getDoc, addDoc, serverTimestamp, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import type { Proposal } from '@/lib/types';
-import { proposals as seedProposalsData } from '@/lib/data';
+import { proposals as seedProposals } from '@/lib/data';
 
 const USER_NAME = 'Community Member'; // Hardcoded for demo purposes
 
 // A function to check and seed data for proposals if they don't exist.
-async function seedProposalsData() {
+async function seedInitialProposals() {
     if (!db) return; // Firebase not configured
 
     const proposalsColRef = collection(db, 'proposals');
@@ -21,7 +21,7 @@ async function seedProposalsData() {
     console.log("Seeding proposals data...");
 
     const batch = writeBatch(db);
-    seedProposalsData.forEach(proposal => {
+    seedProposals.forEach(proposal => {
         const { id, ...proposalData } = proposal;
         const proposalRef = doc(proposalsColRef, id);
         batch.set(proposalRef, proposalData);
@@ -32,11 +32,11 @@ async function seedProposalsData() {
 
 export async function getProposals(): Promise<Proposal[]> {
     if (!db) {
-        return seedProposalsData;
+        return seedProposals;
     }
     
     try {
-        await seedProposalsData(); // Seed data if collection is empty
+        await seedInitialProposals(); // Seed data if collection is empty
         const proposalsColRef = collection(db, 'proposals');
         const q = query(proposalsColRef, orderBy('submittedDate', 'desc'));
         const querySnapshot = await getDocs(q);
