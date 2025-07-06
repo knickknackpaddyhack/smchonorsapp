@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -25,12 +24,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setIsLoading(false);
         return;
     }
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
-    });
 
-    // This handles potential errors after returning from the redirect.
+    // This is called once on mount to handle the result of a redirect sign-in.
+    // It's important to handle this to catch errors from the redirect flow.
     getRedirectResult(auth)
         .catch((error) => {
             console.error("Firebase redirect error:", error);
@@ -49,9 +45,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             }
         });
 
+    // onAuthStateChanged is the primary listener for auth state.
+    // It will fire when the user signs in (including after a redirect), signs out, or when the token is refreshed.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+      setIsLoading(false);
+    });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
