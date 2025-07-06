@@ -27,8 +27,8 @@ const formSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
   description: z.string().min(20, 'Description must be at least 20 characters.'),
   goals: z.string().min(10, 'Goals must be at least 10 characters.'),
-  resources: z.string().min(10, 'Resource requirements must be at least 10 characters.'),
-  targetAudience: z.string().min(5, 'Target audience must be at least 5 characters.'),
+  resources: z.string(),
+  targetAudience: z.string(),
 });
 
 export default function NewProposalPage() {
