@@ -121,28 +121,32 @@ export const engagements: Engagement[] = [
         id: 'e1',
         title: 'Neighborhood Mural Painting',
         type: 'Project Contribution',
-        date: 'July 20, 2024',
-        details: 'Contributed 4 hours of painting and design work.'
+        date: '2024-07-20',
+        details: 'Contributed 4 hours of painting and design work.',
+        points: 20,
     },
     {
         id: 'e2',
         title: 'Summer Tech Fair 2024',
         type: 'Event Attendance',
-        date: 'August 15, 2024',
-        details: 'Attended workshops on AI and Web Development.'
+        date: '2024-08-15',
+        details: 'Attended workshops on AI and Web Development.',
+        points: 10,
     },
     {
         id: 'e3',
         title: 'Weekly Yoga in the Park',
         type: 'Proposal Submission',
-        date: 'June 1, 2024',
-        details: 'Submitted the initial proposal which was later approved.'
+        date: '2024-06-01',
+        details: 'Submitted the initial proposal which was later approved.',
+        points: 30,
     },
     {
         id: 'e4',
         title: 'Community Garden Initiative',
         type: 'Project Contribution',
-        date: 'Ongoing',
-        details: 'Helped with planting and weekly maintenance.'
+        date: '2024-07-01',
+        details: 'Helped with planting and weekly maintenance.',
+        points: 15,
     }
 ];

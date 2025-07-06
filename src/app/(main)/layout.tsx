@@ -29,7 +29,7 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 const menuItems = [
   { href: '/dashboard', label: 'Activity Dashboard', icon: LayoutDashboard },
   { href: '/proposals', label: 'Proposals', icon: FileText },
-  { href: '/profile', label: 'My Engagement', icon: User },
+  { href: '/profile', label: 'My Profile', icon: User },
   { href: '/optimize', label: 'Proposal Optimizer', icon: Lightbulb },
   { href: '/admin', label: 'Admin', icon: Shield },
 ];

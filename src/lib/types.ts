@@ -23,10 +23,19 @@ export interface Proposal {
   submittedDate: string;
 }
 
+export interface UserProfile {
+  id: string;
+  name: string;
+  email: string;
+  joinedDate: string;
+  honorsPoints: number;
+}
+
 export interface Engagement {
-    id: string;
+    id:string;
     title: string;
     type: 'Event Attendance' | 'Project Contribution' | 'Proposal Submission';
     date: string;
     details: string;
+    points: number;
 }
