@@ -3,14 +3,14 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import type { UserProfile } from '@/lib/types';
-import { getUserProfile, updateUserProfile, createUserProfile, getUserEngagements } from '@/services/user';
+import { getUserProfile, updateUserProfile, createUserProfile } from '@/services/user';
 import { useAuth } from './auth-context';
 
 interface UserContextType {
   profile: UserProfile | null;
   isLoading: boolean;
   updateProfile: (newProfileData: Partial<Pick<UserProfile, 'name' | 'email'>>) => Promise<void>;
-  createProfile: (newProfileData: Pick<UserProfile, 'name' | 'email'>) => Promise<void>;
+  createProfile: (newProfileData: { name: string, email: string, photoURL?: string }) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -60,7 +60,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const createProfile = async (newProfileData: Pick<UserProfile, 'name' | 'email'>) => {
+  const createProfile = async (newProfileData: { name: string, email: string, photoURL?: string }) => {
     if (!authUser) throw new Error("User is not authenticated.");
     try {
       await createUserProfile(authUser.uid, newProfileData);

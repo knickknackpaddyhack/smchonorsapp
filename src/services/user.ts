@@ -6,8 +6,8 @@ import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 import { engagements as seedEngagementsData } from '@/lib/data';
 
-async function seedUserEngagements(uid: string) {
-    if (!isFirebaseConfigured) return;
+async function seedInitialUserEngagements(uid: string): Promise<number> {
+    if (!isFirebaseConfigured) return 0;
 
     const engagementsColRef = collection(db!, 'users', uid, 'engagements');
     
@@ -21,18 +21,14 @@ async function seedUserEngagements(uid: string) {
         batch.set(engagementRef, engagementData);
         totalPoints += engagement.points;
     });
-
-    const userRef = doc(db!, 'users', uid);
-    batch.update(userRef, { honorsPoints: totalPoints });
     
     await batch.commit();
+    return totalPoints;
 }
 
 
 export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     if (!isFirebaseConfigured) {
-        // This case is for local development without firebase credentials.
-        // It should not be hit if firebase is configured.
         return null;
     }
     
@@ -58,17 +54,21 @@ export async function createUserProfile(uid: string, profileData: Pick<UserProfi
         const userRef = doc(db!, 'users', uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            throw new Error("User profile already exists.");
+            // Profile already exists, no need to create or seed.
+            return;
         }
+
+        const initialPoints = await seedInitialUserEngagements(uid);
 
         const newProfile: Omit<UserProfile, 'id'> = {
             name: profileData.name,
             email: profileData.email,
+            photoURL: profileData.photoURL || '',
             joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-            honorsPoints: 0,
+            honorsPoints: initialPoints,
         };
+
         await setDoc(userRef, newProfile);
-        await seedUserEngagements(uid); // Seed engagements for the new user
     } catch (error) {
         console.error("Error creating user profile:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {

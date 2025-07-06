@@ -43,9 +43,10 @@ export function CreateProfilePage() {
   }, [authUser, form]);
 
   async function onSubmit(values: z.infer<typeof profileSchema>) {
+    if (!authUser) return;
     setIsSubmitting(true);
     try {
-      await createProfile(values);
+      await createProfile({ ...values, photoURL: authUser.photoURL || '' });
       toast({
         title: "Profile Created!",
         description: "Welcome! Your profile has been set up.",
@@ -65,7 +66,7 @@ export function CreateProfilePage() {
     <div className="flex items-center justify-center h-full">
       <Card className="max-w-md w-full">
         <CardHeader>
-          <CardTitle className="font-headline text-2xl">Welcome to Honors!</CardTitle>
+          <CardTitle className="font-headline text-2xl">Welcome to EngageForward!</CardTitle>
           <CardDescription>
             It looks like you're new here. Let's create your profile to get started.
           </CardDescription>
