@@ -9,6 +9,7 @@ import {
   Lightbulb,
   Github,
   Shield,
+  Award,
 } from 'lucide-react';
 
 import {
@@ -38,11 +39,11 @@ const menuItems = [
 
 function AppLogo() {
   return (
-    <Link href="/dashboard" className="flex items-center gap-2">
-      <div className="flex items-center justify-center h-8 w-8 bg-sidebar-foreground text-sidebar-background rounded-lg flex-shrink-0">
-          <span className="font-bold text-lg">H</span>
+    <Link href="/dashboard" className="flex items-center gap-2.5">
+      <div className="flex items-center justify-center h-8 w-8 bg-sidebar-accent text-sidebar-accent-foreground rounded-lg flex-shrink-0">
+          <Award className="h-5 w-5" />
       </div>
-      <h1 className="text-xl font-semibold text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline">Honors App</h1>
+      <h1 className="text-xl font-bold text-sidebar-foreground group-data-[collapsible=icon]:hidden font-headline tracking-tight">Honors</h1>
     </Link>
   )
 }

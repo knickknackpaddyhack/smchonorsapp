@@ -12,14 +12,14 @@ export function ActivityCard({ activity }: { activity: Activity }) {
   const engagementLabel = type === 'Event' ? 'Attendees' : 'Participants';
 
   return (
-    <Link href={`/dashboard/${id}`} className="block h-full">
-        <Card className="flex flex-col h-full overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300">
-        <div className="relative h-48 w-full">
+    <Link href={`/dashboard/${id}`} className="block h-full group">
+        <Card className="flex flex-col h-full overflow-hidden rounded-lg shadow-md hover:shadow-xl transition-all duration-300 border-2 border-transparent group-hover:border-primary">
+        <div className="relative h-48 w-full overflow-hidden">
             <Image
             src={image}
             alt={title}
             fill
-            className="object-cover"
+            className="object-cover transition-transform duration-300 group-hover:scale-105"
             data-ai-hint={aiHint}
             />
             <Badge 
@@ -42,7 +42,7 @@ export function ActivityCard({ activity }: { activity: Activity }) {
             <span>{engagementCount} {engagementLabel}</span>
             </div>
             <div className="flex items-center gap-2">
-            <Star className="h-4 w-4 text-amber-500 fill-amber-500" />
+            <Star className="h-4 w-4 text-accent fill-accent" />
             <span>{feedbackScore} Feedback</span>
             </div>
         </CardFooter>

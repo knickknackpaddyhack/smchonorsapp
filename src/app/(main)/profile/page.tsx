@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Award, Calendar, CheckSquare, FileText, Pencil, Star } from 'lucide-react';
+import { Award, Calendar, FileText, Pencil, Star, Trophy, CalendarCheck } from 'lucide-react';
 import type { Engagement, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,15 +12,16 @@ import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserEngagements } from '@/services/user';
 import { useUser } from '@/contexts/user-context';
+import { Badge } from '@/components/ui/badge';
 
 function getIconForEngagement(type: Engagement['type']) {
     switch (type) {
         case 'Event Attendance':
-            return <CheckSquare className="h-5 w-5 text-primary" />;
+            return <CalendarCheck className="h-5 w-5 text-primary" />;
         case 'Project Contribution':
-            return <Award className="h-5 w-5 text-primary" />;
+            return <Trophy className="h-5 w-5 text-accent" />;
         case 'Proposal Submission':
-            return <FileText className="h-5 w-5 text-primary" />;
+            return <FileText className="h-5 w-5 text-secondary-foreground" />;
     }
 }
 
@@ -107,8 +108,8 @@ export default function ProfilePage() {
             nextBenchmark = benchmarks[0];
         }
         
-        const pointsForNextLevel = nextBenchmark.points - currentLevel.points;
-        const progressTowardsNextLevel = currentPoints - currentLevel.points;
+        const pointsForNextLevel = nextBenchmark.points - (currentLevel.points || 0);
+        const progressTowardsNextLevel = currentPoints - (currentLevel.points || 0);
         const progressPercentage = pointsForNextLevel > 0 ? (progressTowardsNextLevel / pointsForNextLevel) * 100 : 100;
 
         return { currentLevel, nextBenchmark, progressPercentage };
@@ -151,7 +152,7 @@ export default function ProfilePage() {
             <CardHeader>
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex flex-col sm:flex-row items-center gap-4">
-                        <Avatar className="h-20 w-20">
+                        <Avatar className="h-20 w-20 border-2 border-primary/10">
                             <AvatarImage src={`https://placehold.co/80x80.png`} alt={profile.name} data-ai-hint="person face" />
                             <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
@@ -196,29 +197,48 @@ export default function ProfilePage() {
             </CardHeader>
         </Card>
 
-        <Card>
+        <Card className="bg-gradient-to-br from-card to-muted/30">
             <CardHeader>
-                <CardTitle className="font-headline">Honors Progress</CardTitle>
-                <CardDescription>Earn points by participating in community activities.</CardDescription>
+                <CardTitle className="font-headline flex items-center gap-2">
+                    <Award className="text-accent" />
+                    Honors Progress
+                </CardTitle>
+                <CardDescription>Your journey to the top tier of community contributors.</CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-                <div className="flex justify-between items-center font-semibold">
-                    <div className="flex items-center gap-2">
-                        <Star className={`h-6 w-6 ${currentLevel.color || 'text-muted-foreground'}`} />
-                        <span className="text-lg">{profile.honorsPoints.toLocaleString()} Honors Points</span>
-                    </div>
-                    {currentLevel.name !== 'Beginner' && <span className={`text-lg ${currentLevel.color}`}>{currentLevel.name} Tier</span>}
+            <CardContent className="space-y-6">
+                <div className="text-center p-6 bg-muted/50 rounded-lg shadow-inner">
+                    <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">Total Honors Points</p>
+                    <p className="text-5xl font-bold text-primary tracking-tight">{profile.honorsPoints.toLocaleString()}</p>
                 </div>
-                <div>
-                  <Progress value={progressPercentage} className="h-3" />
-                  <div className="flex justify-between text-xs text-muted-foreground mt-2">
-                    <span>{currentLevel.name} ({currentLevel.points} pts)</span>
-                    {nextBenchmark.name !== 'Max Level' ? (
-                       <span>Next: {nextBenchmark.name} ({nextBenchmark.points} pts)</span>
-                    ) : (
-                        <span>Max Level Reached!</span>
-                    )}
-                  </div>
+                
+                <div className="space-y-3">
+                     <div className="flex justify-between items-end">
+                        <div className="space-y-1">
+                            <p className="text-sm font-medium text-muted-foreground">Current Tier</p>
+                            <Badge variant="secondary" className="text-base border-2 border-primary/50">
+                                <Star className={`mr-2 h-4 w-4 ${currentLevel.color || 'text-muted-foreground'}`} />
+                                {currentLevel.name}
+                            </Badge>
+                        </div>
+                        {nextBenchmark.name !== 'Max Level' && (
+                             <div className="space-y-1 text-right">
+                                <p className="text-sm font-medium text-muted-foreground">Next Tier</p>
+                                <Badge variant="outline" className="text-base">
+                                    {nextBenchmark.name}
+                                    <Star className="ml-2 h-4 w-4 opacity-50" />
+                                </Badge>
+                            </div>
+                        )}
+                    </div>
+                    <Progress value={progressPercentage} className="h-3 [&>div]:bg-gradient-to-r [&>div]:from-accent/80 [&>div]:to-accent" />
+                    <div className="flex justify-between text-sm font-medium text-muted-foreground mt-2">
+                        <span>{currentLevel.points.toLocaleString()} pts</span>
+                        {nextBenchmark.name !== 'Max Level' ? (
+                        <span>{nextBenchmark.points.toLocaleString()} pts</span>
+                        ) : (
+                            <span>Max Level Reached!</span>
+                        )}
+                    </div>
                 </div>
             </CardContent>
         </Card>
