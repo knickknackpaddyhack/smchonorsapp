@@ -51,7 +51,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
 
     return () => unsubscribe();
-  }, [toast]);
+  }, []);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
