@@ -24,9 +24,9 @@ import { useToast } from "@/hooks/use-toast";
 import { addProposal } from '@/services/proposals';
 
 const formSchema = z.object({
-  title: z.string().min(5, 'Title must be at least 5 characters.'),
-  description: z.string().min(20, 'Description must be at least 20 characters.'),
-  goals: z.string().min(10, 'Goals must be at least 10 characters.'),
+  title: z.string().min(1, 'Title is required.'),
+  description: z.string().min(1, 'Description is required.'),
+  goals: z.string().min(1, 'Goals are required.'),
   resources: z.string(),
   targetAudience: z.string(),
 });
