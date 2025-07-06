@@ -13,11 +13,13 @@ const firebaseConfig: FirebaseOptions = {
 let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 
-const missingKeys = Object.entries(firebaseConfig)
+export const missingKeys = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
   .map(([key]) => key);
 
-if (missingKeys.length === 0) {
+export const isFirebaseConfigured = missingKeys.length === 0;
+
+if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     db = getFirestore(app);

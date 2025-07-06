@@ -1,7 +1,7 @@
 'use server';
 
 import { doc, getDoc, setDoc, collection, getDocs, writeBatch, DocumentData, updateDoc } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 import { engagements as seedEngagementsData } from '@/lib/data';
 
@@ -9,9 +9,9 @@ const USER_ID = 'user123'; // Hardcoded for demo purposes
 
 // A function to check and seed data for the demo user if they don't exist.
 async function seedUserData() {
-    if (!db) return; // Firebase not configured
+    if (!isFirebaseConfigured) return; // Firebase not configured
 
-    const userRef = doc(db, 'users', USER_ID);
+    const userRef = doc(db!, 'users', USER_ID);
     const userSnap = await getDoc(userRef);
 
     if (userSnap.exists()) {
@@ -20,7 +20,7 @@ async function seedUserData() {
 
     console.log("Seeding data for demo user...");
 
-    const batch = writeBatch(db);
+    const batch = writeBatch(db!);
 
     const initialProfile: Omit<UserProfile, 'id'> = {
         name: 'Community Member',
@@ -31,7 +31,7 @@ async function seedUserData() {
     batch.set(userRef, initialProfile);
     
     let totalPoints = 0;
-    const engagementsColRef = collection(db, 'users', USER_ID, 'engagements');
+    const engagementsColRef = collection(db!, 'users', USER_ID, 'engagements');
     seedEngagementsData.forEach(engagement => {
         const { id, ...engagementData } = engagement;
         const engagementRef = doc(engagementsColRef, id);
@@ -46,7 +46,7 @@ async function seedUserData() {
 
 
 export async function getUserProfile(): Promise<UserProfile | null> {
-    if (!db) {
+    if (!isFirebaseConfigured) {
         return {
             id: USER_ID,
             name: 'Community Member',
@@ -58,7 +58,7 @@ export async function getUserProfile(): Promise<UserProfile | null> {
     
     try {
         await seedUserData();
-        const userRef = doc(db, 'users', USER_ID);
+        const userRef = doc(db!, 'users', USER_ID);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
@@ -72,12 +72,11 @@ export async function getUserProfile(): Promise<UserProfile | null> {
 }
 
 export async function updateUserProfile(profileData: Partial<Omit<UserProfile, 'id'>>): Promise<void> {
-   if (!db) {
-     console.warn("Update failed: Firebase not configured.");
-     return;
+   if (!isFirebaseConfigured) {
+     throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(', ')}. Please check your root .env file.`);
    }
    try {
-    const userRef = doc(db, 'users', USER_ID);
+    const userRef = doc(db!, 'users', USER_ID);
     await updateDoc(userRef, profileData);
    } catch (error) {
      console.error("Error updating user profile:", error);
@@ -86,12 +85,12 @@ export async function updateUserProfile(profileData: Partial<Omit<UserProfile, '
 }
 
 export async function getUserEngagements(): Promise<Engagement[]> {
-    if (!db) {
+    if (!isFirebaseConfigured) {
         return seedEngagementsData;
     }
 
     try {
-        const engagementsColRef = collection(db, 'users', USER_ID, 'engagements');
+        const engagementsColRef = collection(db!, 'users', USER_ID, 'engagements');
         const querySnapshot = await getDocs(engagementsColRef);
         const engagements = querySnapshot.docs.map(doc => ({
             id: doc.id,

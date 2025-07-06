@@ -1,7 +1,7 @@
 'use server';
 
 import { collection, doc, getDocs, setDoc, writeBatch, getDoc, addDoc, serverTimestamp, updateDoc, query, orderBy } from 'firebase/firestore';
-import { db } from '@/lib/firebase';
+import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { Proposal } from '@/lib/types';
 import { proposals as seedProposals } from '@/lib/data';
 
@@ -9,9 +9,9 @@ const USER_NAME = 'Community Member'; // Hardcoded for demo purposes
 
 // A function to check and seed data for proposals if they don't exist.
 async function seedInitialProposals() {
-    if (!db) return; // Firebase not configured
+    if (!isFirebaseConfigured) return; // Firebase not configured
 
-    const proposalsColRef = collection(db, 'proposals');
+    const proposalsColRef = collection(db!, 'proposals');
     const proposalsSnap = await getDocs(proposalsColRef);
 
     if (!proposalsSnap.empty) {
@@ -20,7 +20,7 @@ async function seedInitialProposals() {
 
     console.log("Seeding proposals data...");
 
-    const batch = writeBatch(db);
+    const batch = writeBatch(db!);
     seedProposals.forEach(proposal => {
         const { id, ...proposalData } = proposal;
         const proposalRef = doc(proposalsColRef, id);
@@ -31,13 +31,13 @@ async function seedInitialProposals() {
 }
 
 export async function getProposals(): Promise<Proposal[]> {
-    if (!db) {
+    if (!isFirebaseConfigured) {
         return seedProposals;
     }
     
     try {
         await seedInitialProposals(); // Seed data if collection is empty
-        const proposalsColRef = collection(db, 'proposals');
+        const proposalsColRef = collection(db!, 'proposals');
         const q = query(proposalsColRef, orderBy('submittedDate', 'desc'));
         const querySnapshot = await getDocs(q);
         
@@ -54,11 +54,11 @@ export async function getProposals(): Promise<Proposal[]> {
 type NewProposalData = Omit<Proposal, 'id' | 'status' | 'submittedBy' | 'submittedDate'>;
 
 export async function addProposal(proposalData: NewProposalData): Promise<void> {
-    if (!db) {
-        throw new Error("Cannot add proposal: Firebase not configured.");
+    if (!isFirebaseConfigured) {
+        throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(', ')}. Please check your root .env file.`);
     }
     try {
-        const proposalsColRef = collection(db, 'proposals');
+        const proposalsColRef = collection(db!, 'proposals');
         const newProposalDoc = {
             title: proposalData.title,
             description: proposalData.description,
@@ -81,12 +81,12 @@ export async function addProposal(proposalData: NewProposalData): Promise<void> 
 
 
 export async function updateProposalStatus(proposalId: string, status: Proposal['status']): Promise<void> {
-    if (!db) {
+    if (!isFirebaseConfigured) {
         console.warn("Update failed: Firebase not configured.");
         return;
     }
     try {
-        const proposalRef = doc(db, 'proposals', proposalId);
+        const proposalRef = doc(db!, 'proposals', proposalId);
         await updateDoc(proposalRef, { status });
     } catch (error) {
         console.error("Error updating proposal status:", error);
