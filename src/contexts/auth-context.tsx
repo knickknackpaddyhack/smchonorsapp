@@ -1,3 +1,4 @@
+
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -17,35 +18,45 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
+    // This effect runs once on mount to handle the redirect result.
+    // It helps catch any errors that occurred during the Google sign-in flow.
+    getRedirectResult(auth)
+      .catch((error) => {
+        console.error("Firebase redirect result error:", error);
+        toast({
+            variant: 'destructive',
+            title: "Sign-in Failed",
+            description: `Could not complete sign-in. Error: ${error.code}`
+        });
+      })
+      .finally(() => {
+        setIsProcessingRedirect(false);
+      });
+  }, [toast]);
+
+  useEffect(() => {
+    // This effect establishes the persistent auth state listener.
+    // It waits until the redirect processing is finished to avoid race conditions.
+    if (isProcessingRedirect) {
+      return;
+    }
+
     if (!isFirebaseConfigured) {
         setIsLoading(false);
         return;
     }
 
-    // onAuthStateChanged is the single source of truth for the user's sign-in state.
-    // It fires once on page load, and again whenever the state changes.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
-      setIsLoading(false); // We now know the auth state, so we can stop loading.
-    });
-
-    // We also process the redirect result on mount. This is mainly to catch
-    // potential errors from the OAuth provider that happened during the redirect.
-    // onAuthStateChanged will handle setting the user object itself.
-    getRedirectResult(auth).catch((error) => {
-        console.error("Firebase redirect result error:", error);
-        toast({
-            variant: 'destructive',
-            title: "Sign-in Failed",
-            description: `Could not complete sign-in with Google. Error: ${error.code}`
-        });
+      setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, [isProcessingRedirect]);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -70,7 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      // onAuthStateChanged will handle setting user to null
+      setUser(null);
     } catch (error) {
        console.error("Error signing out:", error);
        toast({
@@ -81,8 +92,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const finalIsLoading = isLoading || isProcessingRedirect;
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading: finalIsLoading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );

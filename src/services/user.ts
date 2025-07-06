@@ -47,6 +47,8 @@ export async function createUserProfile(uid: string, profileData: { name: string
         };
         
         const { id, ...profileToSave } = newProfile;
+        // Perform a simple, single set operation to create the user profile.
+        // This is the most reliable way to ensure the document is created.
         await setDoc(userRef, profileToSave);
 
         return newProfile;
