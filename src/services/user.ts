@@ -6,42 +6,35 @@ import { db, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import type { UserProfile, Engagement } from '@/lib/types';
 import { engagements as seedEngagementsData } from '@/lib/data';
 
-// This function now handles seeding and awarding points.
-// It's designed to be called without being awaited ("fire and forget").
-async function seedEngagementsAndAwardPoints(uid: string): Promise<void> {
+// This function checks if a user has engagements, and if not, seeds them.
+// It's meant for backfilling data for users created before this logic was implemented.
+async function seedMissingEngagements(uid: string): Promise<void> {
     if (!isFirebaseConfigured) return;
 
     const engagementsColRef = collection(db!, 'users', uid, 'engagements');
     
     try {
-        // Check if engagements already exist to prevent re-seeding and re-awarding points
-        const existingEngagements = await getDocs(engagementsColRef);
-        if (!existingEngagements.empty) {
-            console.log("User already has engagements, skipping seed.");
-            return;
+        const engagementsSnap = await getDocs(engagementsColRef);
+
+        if (engagementsSnap.empty) {
+            console.log(`User ${uid} has no engagements. Seeding now.`);
+            const batch = writeBatch(db!);
+            let totalPoints = 0;
+            seedEngagementsData.forEach(engagement => {
+                const { id, ...engagementData } = engagement;
+                const engagementRef = doc(engagementsColRef, id);
+                batch.set(engagementRef, engagementData);
+                totalPoints += engagement.points;
+            });
+
+            // Also update the points on the main profile
+            const userRef = doc(db!, 'users', uid);
+            batch.update(userRef, { honorsPoints: totalPoints });
+
+            await batch.commit();
         }
-
-        console.log("Seeding engagement data and awarding points for new user...");
-        const batch = writeBatch(db!);
-        let totalPoints = 0;
-
-        seedEngagementsData.forEach(engagement => {
-            const { id, ...engagementData } = engagement;
-            const engagementRef = doc(engagementsColRef, id);
-            batch.set(engagementRef, engagementData);
-            totalPoints += engagement.points;
-        });
-        
-        await batch.commit(); // Writes the engagements subcollection
-
-        // Now, update the user's profile with the points
-        const userRef = doc(db!, 'users', uid);
-        await updateDoc(userRef, { honorsPoints: totalPoints });
-
     } catch(error) {
         console.error("Error during background seeding of user engagements:", error);
-        // We don't throw here because this is a background process.
-        // The user is already logged in. An error here is not critical for the UI.
     }
 }
 
@@ -56,6 +49,8 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
+             // As a fallback, seed engagements if they are missing. This is non-blocking.
+            seedMissingEngagements(uid);
             return { id: userSnap.id, ...userSnap.data() } as UserProfile;
         }
         return null;
@@ -69,39 +64,50 @@ export async function createUserProfile(uid: string, profileData: { name: string
     if (!isFirebaseConfigured) {
         throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(',')}. Please check your .env file.`);
     }
+    const userRef = doc(db!, 'users', uid);
+
     try {
-        const userRef = doc(db!, 'users', uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
+            console.log("Attempted to create profile for existing user. Returning existing profile.");
             return { id: userSnap.id, ...userSnap.data() } as UserProfile;
         }
 
-        // Create the user profile with 0 points first. This is a fast, simple write.
-        // This ensures the user document exists immediately, unblocking the login flow.
+        const totalInitialPoints = seedEngagementsData.reduce((acc, curr) => acc + curr.points, 0);
+
         const newProfile: UserProfile = {
             id: uid,
             name: profileData.name,
             email: profileData.email,
             photoURL: profileData.photoURL || '',
             joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-            honorsPoints: 0,
+            honorsPoints: totalInitialPoints,
         };
         
+        const batch = writeBatch(db!);
+        
+        // 1. Set the main user profile document
         const { id, ...profileToSave } = newProfile;
-        await setDoc(userRef, profileToSave);
+        batch.set(userRef, profileToSave);
 
-        // After the critical profile document is created, start the background job
-        // to seed their initial engagement data and award points.
-        // We DO NOT await this, so the UI is not blocked.
-        seedEngagementsAndAwardPoints(uid);
+        // 2. Set the documents in the engagements subcollection
+        const engagementsColRef = collection(db!, 'users', uid, 'engagements');
+        seedEngagementsData.forEach(engagement => {
+            const { id: engagementId, ...engagementData } = engagement;
+            const engagementRef = doc(engagementsColRef, engagementId);
+            batch.set(engagementRef, engagementData);
+        });
 
-        return newProfile; // Return the profile immediately with 0 points.
+        // Commit all writes at once
+        await batch.commit();
+
+        return newProfile;
     } catch (error) {
-        console.error("Error creating user profile:", error);
+        console.error("Error creating user profile with batch write:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
             throw new Error("Creation failed: Permission Denied. Please check your Firestore security rules in the Firebase console. They may be too restrictive.");
         }
-        throw error;
+        throw new Error("An unknown server error occurred while creating the profile.");
     }
 }
 
