@@ -3,14 +3,15 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Award, Calendar, CheckSquare, FileText, Pencil, Loader2, Star } from 'lucide-react';
+import { Award, Calendar, CheckSquare, FileText, Pencil, Star } from 'lucide-react';
 import type { Engagement, UserProfile } from '@/lib/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
-import { getUserProfile, updateUserProfile, getUserEngagements } from '@/services/user';
+import { getUserEngagements } from '@/services/user';
+import { useUser } from '@/contexts/user-context';
 
 function getIconForEngagement(type: Engagement['type']) {
     switch (type) {
@@ -32,30 +33,29 @@ const benchmarks = [
 
 export default function ProfilePage() {
     const { toast } = useToast();
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const { profile, isLoading: isProfileLoading, updateProfile } = useUser();
     const [engagements, setEngagements] = useState<Engagement[]>([]);
-    const [isLoading, setIsLoading] = useState(true);
+    const [isEngagementsLoading, setIsEngagementsLoading] = useState(true);
     const [isEditing, setIsEditing] = useState(false);
     const [tempName, setTempName] = useState('');
     const [tempEmail, setTempEmail] = useState('');
 
     useEffect(() => {
-        async function loadData() {
-            setIsLoading(true);
-            const [profileData, engagementsData] = await Promise.all([
-                getUserProfile(),
-                getUserEngagements()
-            ]);
-            setProfile(profileData);
+        async function loadEngagements() {
+            setIsEngagementsLoading(true);
+            const engagementsData = await getUserEngagements();
             setEngagements(engagementsData);
-            if (profileData) {
-                setTempName(profileData.name);
-                setTempEmail(profileData.email);
-            }
-            setIsLoading(false);
+            setIsEngagementsLoading(false);
         }
-        loadData();
+        loadEngagements();
     }, []);
+
+    useEffect(() => {
+        if (profile) {
+            setTempName(profile.name);
+            setTempEmail(profile.email);
+        }
+    }, [profile]);
 
     const handleEdit = () => {
         if (profile) {
@@ -69,8 +69,7 @@ export default function ProfilePage() {
         if (!profile) return;
         
         try {
-            await updateUserProfile({ name: tempName, email: tempEmail });
-            setProfile(prev => prev ? { ...prev, name: tempName, email: tempEmail } : null);
+            await updateProfile({ name: tempName, email: tempEmail });
             setIsEditing(false);
             toast({
                 title: "Profile updated successfully!",
@@ -86,6 +85,10 @@ export default function ProfilePage() {
 
     const handleCancel = () => {
         setIsEditing(false);
+        if (profile) {
+            setTempName(profile.name);
+            setTempEmail(profile.email);
+        }
     }
     
     const { currentLevel, nextBenchmark, progressPercentage } = useMemo(() => {
@@ -111,7 +114,7 @@ export default function ProfilePage() {
         return { currentLevel, nextBenchmark, progressPercentage };
     }, [profile?.honorsPoints]);
 
-    if (isLoading) {
+    if (isProfileLoading) {
         return (
             <div className="space-y-6">
                 <Card>
@@ -226,38 +229,46 @@ export default function ProfilePage() {
                 <CardDescription>A record of your participation and contributions.</CardDescription>
             </CardHeader>
             <CardContent>
-                <ul className="space-y-4">
-                    {engagements.map((engagement, index) => (
-                        <li key={engagement.id}>
-                            <div className="flex gap-4">
-                                <div className="flex flex-col items-center">
-                                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary flex-shrink-0">
-                                        {getIconForEngagement(engagement.type)}
+                {isEngagementsLoading ? (
+                    <div className="space-y-4">
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                        <Skeleton className="h-16 w-full" />
+                    </div>
+                ) : (
+                    <ul className="space-y-4">
+                        {engagements.map((engagement, index) => (
+                            <li key={engagement.id}>
+                                <div className="flex gap-4">
+                                    <div className="flex flex-col items-center">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-secondary flex-shrink-0">
+                                            {getIconForEngagement(engagement.type)}
+                                        </div>
+                                        {index < engagements.length - 1 && (
+                                        <div className="w-px flex-1 bg-border my-2"></div>
+                                        )}
                                     </div>
-                                    {index < engagements.length - 1 && (
-                                      <div className="w-px flex-1 bg-border my-2"></div>
-                                    )}
+                                    <div className="flex-1 pb-4">
+                                        <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-semibold">{engagement.title}</p>
+                                            <p className="text-sm text-muted-foreground">{engagement.type}</p>
+                                        </div>
+                                        <div className="text-sm font-bold text-primary text-right">
+                                            +{engagement.points} pts
+                                        </div>
+                                        </div>
+                                        <p className="text-sm mt-1">{engagement.details}</p>
+                                        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
+                                            <Calendar className="h-3 w-3" />
+                                            <span>{engagement.date}</span>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="flex-1 pb-4">
-                                    <div className="flex justify-between items-start">
-                                      <div>
-                                        <p className="font-semibold">{engagement.title}</p>
-                                        <p className="text-sm text-muted-foreground">{engagement.type}</p>
-                                      </div>
-                                      <div className="text-sm font-bold text-primary text-right">
-                                        +{engagement.points} pts
-                                      </div>
-                                    </div>
-                                    <p className="text-sm mt-1">{engagement.details}</p>
-                                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-2">
-                                        <Calendar className="h-3 w-3" />
-                                        <span>{engagement.date}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
+                            </li>
+                        ))}
+                    </ul>
+                )}
             </CardContent>
         </Card>
     </div>

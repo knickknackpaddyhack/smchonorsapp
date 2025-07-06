@@ -25,6 +25,8 @@ import {
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { UserProvider, useUser } from '@/contexts/user-context';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const menuItems = [
   { href: '/dashboard', label: 'Activity Dashboard', icon: LayoutDashboard },
@@ -62,13 +64,10 @@ function TopBar({pageTitle}: {pageTitle: string}) {
   )
 }
 
-export default function MainLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
+  const { profile, isLoading } = useUser();
 
   return (
     <SidebarProvider>
@@ -92,14 +91,37 @@ export default function MainLayout({
         </SidebarContent>
         <SidebarFooter>
           <div className="flex items-center gap-3">
-             <Avatar>
-                <AvatarImage src="https://placehold.co/40x40.png" alt="Community Member" data-ai-hint="person face" />
-                <AvatarFallback>CM</AvatarFallback>
-            </Avatar>
-            <div className="flex flex-col group-data-[collapsible=icon]:hidden">
-                <span className="text-sm font-semibold text-sidebar-foreground">Community Member</span>
-                <span className="text-xs text-sidebar-foreground/70">member@email.com</span>
-            </div>
+             {isLoading ? (
+                <>
+                  <Avatar>
+                      <AvatarFallback>CM</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                      <Skeleton className="h-4 w-24 mb-1" />
+                      <Skeleton className="h-3 w-32" />
+                  </div>
+                </>
+             ) : profile ? (
+                <>
+                  <Avatar>
+                      <AvatarImage src="https://placehold.co/40x40.png" alt={profile.name} data-ai-hint="person face" />
+                      <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                      <span className="text-sm font-semibold text-sidebar-foreground">{profile.name}</span>
+                      <span className="text-xs text-sidebar-foreground/70">{profile.email}</span>
+                  </div>
+                </>
+             ) : (
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                      <AvatarFallback>??</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col group-data-[collapsible=icon]:hidden">
+                      <span className="text-sm font-semibold text-sidebar-foreground">User not found</span>
+                  </div>
+                </div>
+             )}
           </div>
         </SidebarFooter>
       </Sidebar>
@@ -110,5 +132,17 @@ export default function MainLayout({
         </main>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+export default function MainLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <UserProvider>
+      <LayoutContent>{children}</LayoutContent>
+    </UserProvider>
   );
 }
