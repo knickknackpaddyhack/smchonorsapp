@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, User } from 'firebase/auth';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, User } from 'firebase/auth';
 import { auth, isFirebaseConfigured } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -29,19 +29,42 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(user);
       setIsLoading(false);
     });
+
+    // This handles potential errors after returning from the redirect.
+    getRedirectResult(auth)
+        .catch((error) => {
+            console.error("Firebase redirect error:", error);
+            if (error.code === 'auth/unauthorized-domain') {
+                 toast({
+                    variant: 'destructive',
+                    title: "Authorization Error",
+                    description: "This app's domain is not authorized for sign-in. Please check your Firebase console settings."
+                });
+            } else {
+                 toast({
+                    variant: 'destructive',
+                    title: "Sign-in Failed",
+                    description: "Could not sign in with Google after redirect. Please try again."
+                });
+            }
+        });
+
+
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signInWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     try {
-      await signInWithPopup(auth, provider);
+      setIsLoading(true); // Indicate loading before redirect
+      await signInWithRedirect(auth, provider);
     } catch (error) {
+      setIsLoading(false);
       console.error("Error signing in with Google:", error);
       toast({
           variant: 'destructive',
           title: "Sign-in Failed",
-          description: "Could not sign in with Google. Please try again."
+          description: "Could not initiate sign-in with Google. Please try again."
       });
     }
   };
