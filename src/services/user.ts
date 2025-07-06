@@ -11,19 +11,27 @@ async function seedInitialUserEngagements(uid: string): Promise<number> {
 
     const engagementsColRef = collection(db!, 'users', uid, 'engagements');
     
-    console.log("Seeding engagement data for new user...");
-    const batch = writeBatch(db!);
-    let totalPoints = 0;
+    try {
+        console.log("Seeding engagement data for new user...");
+        const batch = writeBatch(db!);
+        let totalPoints = 0;
 
-    seedEngagementsData.forEach(engagement => {
-        const { id, ...engagementData } = engagement;
-        const engagementRef = doc(engagementsColRef, id);
-        batch.set(engagementRef, engagementData);
-        totalPoints += engagement.points;
-    });
-    
-    await batch.commit();
-    return totalPoints;
+        seedEngagementsData.forEach(engagement => {
+            const { id, ...engagementData } = engagement;
+            const engagementRef = doc(engagementsColRef, id);
+            batch.set(engagementRef, engagementData);
+            totalPoints += engagement.points;
+        });
+        
+        await batch.commit();
+        return totalPoints;
+    } catch(error) {
+        console.error("Error seeding user engagements:", error);
+        if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
+            throw new Error("Profile creation failed while saving initial data. This is likely due to restrictive Firestore security rules for subcollections (e.g., /users/{userId}/engagements).");
+        }
+        throw new Error("Failed to seed initial user data.");
+    }
 }
 
 
@@ -54,7 +62,6 @@ export async function createUserProfile(uid: string, profileData: { name: string
         const userRef = doc(db!, 'users', uid);
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
-            // Profile already exists, return it to avoid re-creating/overwriting.
             return { id: userSnap.id, ...userSnap.data() } as UserProfile;
         }
 
@@ -76,9 +83,9 @@ export async function createUserProfile(uid: string, profileData: { name: string
     } catch (error) {
         console.error("Error creating user profile:", error);
         if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
-            throw new Error("Creation failed: Permission denied. Please check your Firestore security rules.");
+            throw new Error("Creation failed: Permission Denied. Please check your Firestore security rules in the Firebase console. They may be too restrictive.");
         }
-        throw new Error("Failed to create profile.");
+        throw error;
     }
 }
 
@@ -92,6 +99,9 @@ export async function updateUserProfile(uid: string, profileData: Partial<Omit<U
     await updateDoc(userRef, profileData);
    } catch (error) {
      console.error("Error updating user profile:", error);
+     if (error instanceof Error && (error.message.includes('permission-denied') || error.message.includes('Permission denied'))) {
+        throw new Error("Update failed: Permission Denied. Please check your Firestore security rules.");
+     }
      throw new Error("Failed to update profile.");
    }
 }

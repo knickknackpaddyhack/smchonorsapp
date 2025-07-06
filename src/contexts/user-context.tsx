@@ -1,7 +1,7 @@
 
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import type { UserProfile } from '@/lib/types';
 import { getUserProfile, updateUserProfile, createUserProfile } from '@/services/user';
 import { useAuth } from './auth-context';
@@ -20,31 +20,30 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = useCallback(async () => {
-    if (!authUser) {
-      setProfile(null);
-      setIsLoading(false);
-      return;
-    }
-    
-    setIsLoading(true);
-    try {
-        const profileData = await getUserProfile(authUser.uid);
-        setProfile(profileData);
-    } catch (error) {
-        console.error("Failed to fetch user profile", error);
-        setProfile(null);
-    } finally {
-        setIsLoading(false);
-    }
-  }, [authUser]);
-
   useEffect(() => {
-    // Only fetch profile if auth is resolved
+    const fetchAndSetProfile = async () => {
+      if (!authUser) {
+        setProfile(null);
+        setIsLoading(false);
+        return;
+      }
+
+      setIsLoading(true);
+      try {
+        const userProfile = await getUserProfile(authUser.uid);
+        setProfile(userProfile);
+      } catch (error) {
+        console.error("Error fetching user profile:", error);
+        setProfile(null);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     if (!isAuthLoading) {
-      fetchProfile();
+      fetchAndSetProfile();
     }
-  }, [fetchProfile, isAuthLoading]);
+  }, [authUser, isAuthLoading]);
   
   const updateProfile = async (newProfileData: Partial<Pick<UserProfile, 'name' | 'email'>>) => {
     if (!profile || !authUser) throw new Error("No profile to update.");
