@@ -3,7 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Send } from 'lucide-react';
+import { Send, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -19,6 +21,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from "@/hooks/use-toast";
+import { addProposal } from '@/services/proposals';
 
 const formSchema = z.object({
   title: z.string().min(5, 'Title must be at least 5 characters.'),
@@ -30,6 +33,9 @@ const formSchema = z.object({
 
 export default function NewProposalPage() {
   const { toast } = useToast();
+  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -41,13 +47,25 @@ export default function NewProposalPage() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof formSchema>) {
-    console.log(values);
-    toast({
-      title: "Proposal Submitted!",
-      description: "Your proposal is now under review. Thank you for your contribution!",
-    });
-    form.reset();
+  async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
+    try {
+      await addProposal(values);
+      toast({
+        title: "Proposal Submitted!",
+        description: "Your proposal is now under review. Thank you for your contribution!",
+      });
+      form.reset();
+      router.push('/proposals');
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: "Submission Failed",
+        description: "Could not submit your proposal. Please try again.",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -126,8 +144,12 @@ export default function NewProposalPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full sm:w-auto">
-              <Send className="mr-2 h-4 w-4" />
+            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+              {isSubmitting ? (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                  <Send className="mr-2 h-4 w-4" />
+              )}
               Submit Proposal
             </Button>
           </form>

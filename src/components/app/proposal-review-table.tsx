@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import type { Proposal } from '@/lib/types';
 import {
   Table,
@@ -15,9 +14,11 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, CheckCircle, XCircle } from 'lucide-react';
+import { updateProposalStatus } from '@/services/proposals';
 
 interface ProposalReviewTableProps {
-    initialProposals: Proposal[];
+    proposals: Proposal[];
+    onUpdate: () => void;
 }
 
 const statusConfig: Record<Proposal['status'], { variant: 'default' | 'secondary' | 'destructive' | 'outline' }> = {
@@ -28,20 +29,24 @@ const statusConfig: Record<Proposal['status'], { variant: 'default' | 'secondary
     'Under Review': { variant: 'outline' },
 };
 
-export function ProposalReviewTable({ initialProposals }: ProposalReviewTableProps) {
-    const [proposals, setProposals] = useState<Proposal[]>(initialProposals);
+export function ProposalReviewTable({ proposals, onUpdate }: ProposalReviewTableProps) {
     const { toast } = useToast();
 
-    const handleStatusChange = (proposalId: string, newStatus: Proposal['status']) => {
-        setProposals(currentProposals =>
-            currentProposals.map(p =>
-                p.id === proposalId ? { ...p, status: newStatus } : p
-            )
-        );
-        toast({
-            title: `Proposal ${newStatus}`,
-            description: `The proposal has been successfully updated.`,
-        });
+    const handleStatusChange = async (proposalId: string, newStatus: Proposal['status']) => {
+        try {
+            await updateProposalStatus(proposalId, newStatus);
+            toast({
+                title: `Proposal ${newStatus}`,
+                description: `The proposal has been successfully updated.`,
+            });
+            onUpdate(); // Refresh the data in the parent component
+        } catch (error) {
+             toast({
+                variant: 'destructive',
+                title: 'Update Failed',
+                description: 'Could not update proposal status. Please try again.',
+            });
+        }
     };
 
     return (

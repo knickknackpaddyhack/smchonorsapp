@@ -1,9 +1,32 @@
+'use client';
+
+import { useState, useEffect, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
-import { proposals } from "@/lib/data";
 import { ProposalReviewTable } from "@/components/app/proposal-review-table";
-import { Shield } from 'lucide-react';
+import { Shield, Loader2 } from 'lucide-react';
+import { getProposals } from '@/services/proposals';
+import type { Proposal } from '@/lib/types';
 
 export default function AdminPage() {
+    const [proposals, setProposals] = useState<Proposal[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    const fetchProposals = useCallback(async () => {
+        // Keep loading true while fetching
+        const fetchedProposals = await getProposals();
+        setProposals(fetchedProposals);
+        setIsLoading(false);
+    }, []);
+
+    useEffect(() => {
+        fetchProposals();
+    }, [fetchProposals]);
+
+    const handleUpdate = () => {
+      setIsLoading(true);
+      fetchProposals();
+    }
+
     return (
         <div className="space-y-6">
              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4">
@@ -25,7 +48,13 @@ export default function AdminPage() {
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ProposalReviewTable initialProposals={proposals} />
+                    {isLoading ? (
+                        <div className="flex justify-center items-center py-10">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        </div>
+                    ) : (
+                        <ProposalReviewTable proposals={proposals} onUpdate={handleUpdate} />
+                    )}
                 </CardContent>
             </Card>
         </div>
