@@ -53,7 +53,7 @@ export async function getProposals(): Promise<Proposal[]> {
 
 type NewProposalData = Omit<Proposal, 'id' | 'status' | 'submittedBy' | 'submittedDate'>;
 
-export async function addProposal(proposalData: NewProposalData): Promise<Proposal> {
+export async function addProposal(proposalData: NewProposalData): Promise<void> {
     if (!db) {
         throw new Error("Cannot add proposal: Firebase not configured.");
     }
@@ -69,11 +69,7 @@ export async function addProposal(proposalData: NewProposalData): Promise<Propos
             submittedBy: USER_NAME,
             submittedDate: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
         };
-        const docRef = await addDoc(proposalsColRef, newProposalDoc);
-        return {
-            id: docRef.id,
-            ...newProposalDoc,
-        };
+        await addDoc(proposalsColRef, newProposalDoc);
     } catch (error) {
         console.error("Error adding proposal:", error);
         throw new Error("Failed to submit proposal.");

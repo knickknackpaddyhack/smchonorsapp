@@ -50,7 +50,17 @@ export default function NewProposalPage() {
   async function onSubmit(values: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
     try {
-      await addProposal(values);
+      // Ensure the data passed to the server action is a plain object
+      const plainValues = {
+        title: values.title,
+        description: values.description,
+        goals: values.goals,
+        resources: values.resources,
+        targetAudience: values.targetAudience,
+      };
+      
+      await addProposal(plainValues);
+      
       toast({
         title: "Proposal Submitted!",
         description: "Your proposal is now under review. Thank you for your contribution!",
