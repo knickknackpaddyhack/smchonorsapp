@@ -29,39 +29,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
+      console.log("AuthProvider: Firebase not configured. Skipping auth logic.");
       setIsLoading(false);
       return;
     }
+
+    // This effect runs once on app load. It's designed to handle the
+    // complex redirect sign-in flow.
     
-    // First, process any pending redirect result.
-    // This runs once on mount and ensures we capture the auth state from the redirect.
+    console.log("AuthProvider: useEffect started. Checking for redirect result...");
+
+    // Step 1: Process the redirect result. This is crucial. It "catches" the
+    // user info after they return from the Google sign-in page.
     getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // This means the user has just signed in via redirect.
+          // The `onAuthStateChanged` listener below will soon fire with this user's data.
+          console.log("AuthProvider: getRedirectResult SUCCESS. User found:", result.user.displayName);
+        } else {
+            // This means the page loaded without a sign-in redirect.
+            // This is normal on most page loads.
+            console.log("AuthProvider: getRedirectResult finished. No new redirect user.");
+        }
+      })
       .catch((error) => {
-        console.error("Error processing redirect result:", error);
+        // Handle any errors from the redirect process itself.
+        console.error("AuthProvider: Error processing redirect result:", error);
         toast({
           variant: 'destructive',
           title: 'Sign-In Failed',
-          description: `An error occurred during the sign-in process. Please check the console.`,
+          description: `An error occurred during the sign-in process. Code: ${error.code}`,
         });
       })
       .finally(() => {
-        // After processing the redirect, set up the central listener.
-        // This is the single source of truth for the user's login status.
+        // Step 2: Set up the central listener. This is the single source of truth
+        // for the user's login status going forward. It runs *after* the redirect
+        // check is complete.
+        console.log("AuthProvider: Setting up onAuthStateChanged listener.");
         const unsubscribe = onAuthStateChanged(auth, (user) => {
-          // This callback fires whenever the auth state changes.
-          // e.g., after getRedirectResult, signIn, or signOut.
-          setUser(user);
-          // We only set loading to false here, ensuring the app waits until
-          // the initial auth state (including any redirect) is fully determined.
+          console.log("AuthProvider: onAuthStateChanged fired.");
+          if (user) {
+            console.log("AuthProvider: Listener found an authenticated user:", user.displayName);
+            setUser(user);
+          } else {
+            console.log("AuthProvider: Listener found NO authenticated user.");
+            setUser(null);
+          }
+          // No matter what, the initial auth check is now complete.
+          console.log("AuthProvider: Setting isLoading to false.");
           setIsLoading(false);
         });
 
-        // Return the unsubscribe function for cleanup.
-        // It's important this is done inside the .finally() so it's tied to the
-        // same lifecycle as the onAuthStateChanged listener itself.
-        return () => unsubscribe();
+        // The 'unsubscribe' function is returned for cleanup. When this component
+        // is removed from the screen, React will call this function to remove the
+        // listener and prevent memory leaks. It does not sign the user in or out.
+        return () => {
+          console.log("AuthProvider: Cleaning up onAuthStateChanged listener.");
+          unsubscribe();
+        }
       });
-
   }, [toast]);
 
 
@@ -73,8 +100,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const provider = new GoogleAuthProvider();
     try {
-      // This function doesn't return anything. It just redirects.
-      // The result is caught by getRedirectResult on page load.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Error initiating sign in with Google:", error);
@@ -90,7 +115,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
-      // The onAuthStateChanged listener will automatically handle setting the user to null.
     } catch (error) {
        console.error("Error signing out:", error);
        toast({
