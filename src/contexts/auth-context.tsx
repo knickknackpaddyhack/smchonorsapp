@@ -6,9 +6,10 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithRedirect,
-  getRedirectResult,
   signOut as firebaseSignOut,
   User,
+  setPersistence,
+  browserLocalPersistence,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -28,36 +29,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This async function inside useEffect allows us to control the sequence of operations precisely.
-    const processAuth = async () => {
-      console.log("AuthProvider: Starting auth processing...");
-
+    const initializeAuth = async () => {
+      if (!isFirebaseConfigured) {
+        console.log("AuthProvider: Firebase not configured. Skipping auth logic.");
+        setIsLoading(false);
+        return;
+      }
+      
       try {
-        // Step 1: Explicitly process the redirect result first. This "catches" the user info from Google.
-        const result = await getRedirectResult(auth);
-        if (result) {
-          // A user has successfully signed in via redirect.
-          // The onAuthStateChanged listener below will handle setting the user state.
-          console.log("AuthProvider: Successfully processed redirect result for user:", result.user.displayName);
-           toast({
-            title: `Welcome, ${result.user.displayName}!`,
-            description: "You have been successfully signed in.",
-          });
-        } else {
-            console.log("AuthProvider: No new user from redirect result.");
-        }
+        console.log("AuthProvider: Setting auth persistence...");
+        // This is the critical fix: ensuring persistence is set before setting up the listener.
+        await setPersistence(auth, browserLocalPersistence);
+        console.log("AuthProvider: Auth persistence set successfully.");
       } catch (error) {
-        // This will catch errors during the redirect process itself.
-        console.error("AuthProvider: Error processing redirect result:", error);
-        toast({
-          variant: 'destructive',
-          title: "Sign-in Failed",
-          description: "Could not process login information. Please try again."
-        });
+        console.error("AuthProvider: Failed to set persistence", error);
       }
 
-      // Step 2: Set up the definitive listener. This will now fire with the correct user state
-      // because the redirect has been processed.
+      // onAuthStateChanged is the single source of truth for the user's state.
+      // It will fire after the redirect is complete and the session is restored from local storage.
       const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         console.log("AuthProvider: onAuthStateChanged listener fired.");
         if (currentUser) {
@@ -67,9 +56,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           console.log("AuthProvider: Listener found NO authenticated user.");
           setUser(null);
         }
-        // Step 3: Only set loading to false AFTER the listener has given us an initial state.
-        // This is the key to preventing the race condition.
-        console.log("AuthProvider: isLoading set to false.");
+        console.log("AuthProvider: Auth state determined, isLoading set to false.");
         setIsLoading(false);
       });
 
@@ -80,15 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       };
     };
 
-    if (isFirebaseConfigured) {
-      processAuth();
-    } else {
-       console.log("AuthProvider: Firebase not configured. Skipping auth logic.");
-       setIsLoading(false);
-    }
-    // The empty dependency array ensures this effect runs only once on mount.
-    // Toast is memoized by its hook, but can be added if linting requires.
-  }, [toast]);
+    initializeAuth();
+  }, []); // Empty dependency array ensures this runs only once on mount.
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -98,7 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const provider = new GoogleAuthProvider();
     try {
-      // This function does not return anything, it just navigates away.
+      // signInWithRedirect navigates away. The listener will handle the result when the user returns.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Error initiating sign in with Google redirect:", error);

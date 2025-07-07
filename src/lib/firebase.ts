@@ -1,7 +1,7 @@
 
 import { initializeApp, getApps, getApp, FirebaseOptions, FirebaseApp } from "firebase/app";
 import { getFirestore, Firestore } from "firebase/firestore";
-import { getAuth, Auth, browserLocalPersistence, setPersistence } from "firebase/auth";
+import { getAuth, Auth } from "firebase/auth";
 
 const firebaseConfig: FirebaseOptions = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -26,9 +26,7 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // Explicitly set persistence to ensure session is stored across redirects.
-    // This is the default, but being explicit can solve obscure issues like state loss.
-    setPersistence(auth, browserLocalPersistence);
+    // Persistence will now be set in AuthProvider to ensure it's awaited.
     db = getFirestore(app);
   } catch (e) {
     console.error("Failed to initialize Firebase", e);
