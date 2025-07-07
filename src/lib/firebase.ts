@@ -26,7 +26,6 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
-    // Persistence will now be set in AuthProvider to ensure it's awaited.
     db = getFirestore(app);
   } catch (e) {
     console.error("Failed to initialize Firebase", e);

@@ -4,7 +4,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithRedirect,
+  signInWithPopup,
   signOut as firebaseSignOut,
   User,
   setPersistence,
@@ -29,30 +29,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
-        console.log("AuthProvider: Firebase not configured. Skipping auth listener.");
         setIsLoading(false);
         return;
     }
 
-    console.log("AuthProvider: Setting up onAuthStateChanged listener.");
-
+    // The onAuthStateChanged listener is the single source of truth.
+    // It will be notified of the successful login from signInWithPopup.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      console.log("AuthProvider: onAuthStateChanged listener fired.");
       if (currentUser) {
-        console.log(`AuthProvider: Listener has an authenticated user: ${currentUser.displayName}`);
         setUser(currentUser);
       } else {
-        console.log("AuthProvider: Listener has NO authenticated user.");
         setUser(null);
       }
-      console.log("AuthProvider: Auth state determined. isLoading set to false.");
       setIsLoading(false);
     });
 
-    return () => {
-        console.log("AuthProvider: Cleaning up listener.");
-        unsubscribe();
-    }
+    return () => unsubscribe();
   }, []);
 
   const signInWithGoogle = async () => {
@@ -63,11 +55,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const provider = new GoogleAuthProvider();
     try {
       await setPersistence(auth, browserLocalPersistence);
-      console.log("AuthProvider: Auth persistence set. Initiating redirect sign-in.");
-      await signInWithRedirect(auth, provider);
+      await signInWithPopup(auth, provider);
+      // The onAuthStateChanged listener will handle the user state update.
     } catch (error: any) {
-      console.error('Error initiating sign in', error);
-      toast({ variant: 'destructive', title: 'Sign-in Failed', description: 'Could not start the sign-in process.' });
+      console.error('Error during Google Sign-In with popup:', error);
+      
+      let description = 'An unknown error occurred during sign-in.';
+      if (error.code === 'auth/popup-closed-by-user') {
+        description = 'The sign-in popup was closed before completion.';
+      } else if (error.code === 'auth/popup-blocked') {
+          description = 'Popup was blocked by the browser. Please allow popups for this site and try again.'
+      }
+
+      toast({ 
+        variant: 'destructive', 
+        title: 'Sign-in Failed', 
+        description: description
+      });
     }
   };
 
