@@ -28,47 +28,46 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect handles the result of a redirect sign-in attempt.
-    // It should be called once when the component mounts.
-    if (isFirebaseConfigured) {
-      getRedirectResult(auth)
-        .then((result) => {
-          if (result) {
-            // This block runs if the user has just signed in via redirect
-            // and the result has been successfully retrieved.
-            // The onAuthStateChanged listener below will handle setting the user state.
-            console.log("Firebase redirect result processed successfully.");
-          }
-        })
-        .catch((error) => {
-          // Handle errors from getRedirectResult
-          console.error("Error getting redirect result:", error);
-          toast({
-            variant: 'destructive',
-            title: "Sign-in Error",
-            description: `There was a problem authenticating your account: ${error.message}`,
-          });
-        });
+    if (!isFirebaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
 
-      // onAuthStateChanged is the primary listener for auth state.
-      // It will fire when the redirect result is processed, or on any other auth state change.
-      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        setUser(currentUser);
-        setIsLoading(false);
-      }, (error) => {
-        console.error("Firebase Auth Error:", error);
+    // onAuthStateChanged is the primary listener for auth state.
+    // It will fire with the cached user, or when the user signs in or out.
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      setUser(user);
+    });
+    
+    // getRedirectResult processes the sign-in result from a redirect.
+    // It's crucial to handle its completion to know when the initial auth state is resolved.
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // A user has successfully signed in via redirect.
+          // The `onAuthStateChanged` listener above will have already been called with the user object.
+          toast({
+            title: "Signed In",
+            description: `Welcome, ${result.user.displayName}!`,
+          });
+        }
+      })
+      .catch((error) => {
+        // Handle errors from getRedirectResult, e.g., if the user cancels.
+        console.error("Error getting redirect result:", error);
         toast({
-            variant: 'destructive',
-            title: "Authentication Error",
-            description: "An error occurred during authentication."
+          variant: 'destructive',
+          title: "Sign-in Error",
+          description: `There was a problem authenticating your account: ${error.message}`,
         });
+      })
+      .finally(() => {
+        // Once the redirect result is processed (or if there was no redirect),
+        // we can safely say the initial authentication loading is complete.
         setIsLoading(false);
       });
 
-      return () => unsubscribe();
-    } else {
-      setIsLoading(false); // Not configured, so not loading.
-    }
+    return () => unsubscribe();
   }, [toast]);
 
   const signInWithGoogle = async () => {
@@ -79,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const provider = new GoogleAuthProvider();
     try {
-      // Use full-page redirect which is more robust than a popup.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Error initiating sign in with Google:", error);
