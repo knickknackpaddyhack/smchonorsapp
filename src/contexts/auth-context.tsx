@@ -28,34 +28,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // This is the primary listener for auth state changes.
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-      setIsLoading(false);
-    });
+    let unsubscribe: (() => void) | undefined;
 
-    // We also explicitly check for a redirect result on mount.
-    // This handles the case where the user has just signed in via redirect.
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // A user signed in. onAuthStateChanged will handle setting the state.
-          // We can add a welcome toast here if we want.
-          console.log("Sign-in redirect result processed successfully for:", result.user.displayName);
-        }
-        // If result is null, it means this page load was not from a sign-in redirect.
-      })
-      .catch((error) => {
+    const initializeAuth = async () => {
+      try {
+        // First, explicitly process the redirect result. This is crucial for
+        // ensuring the auth state is updated before the listener runs.
+        await getRedirectResult(auth);
+      } catch (error) {
         console.error("Error processing redirect result:", error);
         toast({
           variant: 'destructive',
           title: 'Sign-In Failed',
-          description: `An error occurred during the sign-in process: ${error.message}`,
-          duration: 9000,
+          description: `An error occurred during the sign-in process. Please check the console.`,
         });
+      }
+      
+      // After any potential redirect has been processed, set up the listener.
+      // This will now correctly report the user's state.
+      unsubscribe = onAuthStateChanged(auth, (user) => {
+        setUser(user);
+        setIsLoading(false);
       });
+    };
 
-    return () => unsubscribe();
+    initializeAuth();
+
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [toast]);
 
   const signInWithGoogle = async () => {

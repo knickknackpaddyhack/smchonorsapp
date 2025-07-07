@@ -23,15 +23,15 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleUserProfile = async () => {
-      // Only proceed if we have a valid authUser object.
-      // If authUser is null, we wait, keeping the profile state null and loading state true.
+      // If auth is still loading, we must wait.
+      if (isAuthLoading) {
+        return;
+      }
+      
+      // If auth is resolved and there is no user, they are logged out.
       if (!authUser) {
-        // If auth is no longer loading and there is still no user, then we can
-        // safely say the user is logged out.
-        if (!isAuthLoading) {
-            setProfile(null);
-            setIsLoading(false);
-        }
+        setProfile(null);
+        setIsLoading(false);
         return;
       }
       
@@ -58,6 +58,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           };
           setProfile(userProfile);
         } else {
+          // User exists in Auth, but not in Firestore. Create their profile.
           const newProfileData = {
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
