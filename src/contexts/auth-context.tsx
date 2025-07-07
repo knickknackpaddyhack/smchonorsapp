@@ -8,7 +8,6 @@ import {
   signInWithRedirect, 
   signOut as firebaseSignOut, 
   User,
-  getRedirectResult
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -33,42 +32,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // onAuthStateChanged is the primary listener for auth state.
-    // It will fire with the cached user, or when the user signs in or out.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
+      setIsLoading(false);
     });
-    
-    // getRedirectResult processes the sign-in result from a redirect.
-    // It's crucial to handle its completion to know when the initial auth state is resolved.
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // A user has successfully signed in via redirect.
-          // The `onAuthStateChanged` listener above will have already been called with the user object.
-          toast({
-            title: "Signed In",
-            description: `Welcome, ${result.user.displayName}!`,
-          });
-        }
-      })
-      .catch((error) => {
-        // Handle errors from getRedirectResult, e.g., if the user cancels.
-        console.error("Error getting redirect result:", error);
-        toast({
-          variant: 'destructive',
-          title: "Sign-in Error",
-          description: `There was a problem authenticating your account: ${error.message}`,
-        });
-      })
-      .finally(() => {
-        // Once the redirect result is processed (or if there was no redirect),
-        // we can safely say the initial authentication loading is complete.
-        setIsLoading(false);
-      });
 
     return () => unsubscribe();
-  }, [toast]);
+  }, []);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -81,11 +51,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Error initiating sign in with Google:", error);
-      toast({
-          variant: 'destructive',
-          title: "Sign-in Failed",
-          description: "Could not start the sign-in process. Please check the console for details."
-      });
+      if (error.code !== 'auth/redirect-cancelled-by-user') {
+        toast({
+            variant: 'destructive',
+            title: "Sign-in Failed",
+            description: "Could not start the sign-in process. Please check the console for details."
+        });
+      }
     }
   };
 

@@ -23,14 +23,19 @@ export function UserProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const handleUserProfile = async () => {
+      // Only proceed if we have a valid authUser object.
+      // If authUser is null, we wait, keeping the profile state null and loading state true.
       if (!authUser) {
-        console.log("UserProvider: Auth state changed, but no authenticated user found. Clearing profile.");
-        setProfile(null);
-        setIsLoading(false);
+        // If auth is no longer loading and there is still no user, then we can
+        // safely say the user is logged out.
+        if (!isAuthLoading) {
+            setProfile(null);
+            setIsLoading(false);
+        }
         return;
       }
-
-      console.log(`UserProvider: User ${authUser.uid} is authenticated. Checking Firestore for profile...`);
+      
+      // If we get here, we have a valid authUser. Start the profile loading process.
       setIsLoading(true);
       const userRef = doc(db, 'users', authUser.uid);
 
@@ -38,7 +43,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-          console.log(`UserProvider: Profile for ${authUser.uid} found. Loading data.`);
           const data = userSnap.data();
           const userProfile: UserProfile = {
             id: userSnap.id,
@@ -54,7 +58,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
           };
           setProfile(userProfile);
         } else {
-          console.log(`UserProvider: No profile for ${authUser.uid}. Creating new profile document...`);
           const newProfileData = {
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
@@ -68,24 +71,16 @@ export function UserProvider({ children }: { children: ReactNode }) {
           };
 
           await setDoc(userRef, newProfileData);
-          console.log(`UserProvider: Successfully created profile for ${authUser.uid}.`);
           
           const newProfile: UserProfile = {
             id: authUser.uid,
-            name: newProfileData.name,
-            email: newProfileData.email,
-            photoURL: newProfileData.photoURL,
-            joinedDate: new Date().toISOString(),
-            honorsPoints: 0,
-            engagements: [],
-            semesterGrad: null,
-            semesterJoined: null,
-            termStartSMC: null,
+            ...newProfileData,
+            joinedDate: new Date().toISOString(), // Use client-side date for immediate state update
           };
           
           setProfile(newProfile);
           toast({
-            title: "Welcome!",
+            title: `Welcome, ${newProfile.name}!`,
             description: "Your profile has been created.",
           });
         }
@@ -103,13 +98,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
       }
     };
     
-    if (isAuthLoading) {
-        console.log("UserProvider: Auth is loading. Waiting for auth state to resolve...");
-        return;
-    }
-
     if (!isFirebaseConfigured) {
-        console.log("UserProvider: Firebase not configured. Aborting profile handling.");
         setIsLoading(false);
         return;
     }

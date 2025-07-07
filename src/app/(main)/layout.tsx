@@ -177,8 +177,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       return <FirebaseNotConfigured />;
     }
 
-    // While we wait to see if a user is logged in, show a spinner.
-    if (isAuthLoading) {
+    // Show a spinner if either the initial auth state is loading,
+    // or if we have a user but their profile is still loading.
+    if (isAuthLoading || (authUser && isProfileLoading)) {
       return (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -191,16 +192,6 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
       return <LoginPage />;
     }
     
-    // If there IS an authenticated user, but we're still loading their profile,
-    // show a spinner. This is now safe because the LoginPage is already unmounted.
-    if (isProfileLoading) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-    }
-
     // If we have an authUser but no profile (e.g., a creation error),
     // send them back to the login page to try again.
     if (!profile) {
