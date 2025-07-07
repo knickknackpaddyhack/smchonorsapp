@@ -4,10 +4,10 @@
 import { useAuth } from '@/contexts/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Award, Loader2 } from 'lucide-react';
+import { Award } from 'lucide-react';
 
 export function LoginPage() {
-  const { signInWithGoogle, isSigningIn } = useAuth();
+  const { signInWithGoogle } = useAuth();
 
   return (
     <div className="flex items-center justify-center h-full bg-muted/40">
@@ -22,8 +22,7 @@ export function LoginPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button onClick={signInWithGoogle} disabled={isSigningIn} className="w-full">
-            {isSigningIn && <Loader2 className="animate-spin" />}
+          <Button onClick={signInWithGoogle} className="w-full">
             Sign in with Google
           </Button>
         </CardContent>

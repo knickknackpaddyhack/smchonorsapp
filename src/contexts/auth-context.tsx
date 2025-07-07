@@ -2,14 +2,13 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, User } from 'firebase/auth';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, signOut as firebaseSignOut, User } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
-  isSigningIn: boolean;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
 }
@@ -19,7 +18,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSigningIn, setIsSigningIn] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -49,28 +47,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         toast({ variant: 'destructive', title: "Firebase Not Configured", description: `Please add your Firebase config to the .env file. Missing: ${missingKeys.join(', ')}` });
         return;
     }
-    if (isSigningIn) return;
 
     const provider = new GoogleAuthProvider();
     try {
-      setIsSigningIn(true);
-      await signInWithPopup(auth, provider);
-      // After the popup closes, onAuthStateChanged will handle the update.
+      // Use full-page redirect which is more robust than a popup.
+      await signInWithRedirect(auth, provider);
+      // After the redirect, onAuthStateChanged will handle the user state update when the app reloads.
     } catch (error: any) {
       console.error("Error signing in with Google:", error);
-
-      if (error.code === 'auth/popup-closed-by-user') {
-          // This is a common case when the user intentionally closes the popup.
-          // No need to show a toast.
-      } else {
-          toast({
-              variant: 'destructive',
-              title: "Sign-in Failed",
-              description: "Could not sign in with Google. Please check the console for details."
-          });
-      }
-    } finally {
-        setIsSigningIn(false);
+      toast({
+          variant: 'destructive',
+          title: "Sign-in Failed",
+          description: "Could not start the sign-in process. Please check the console for details."
+      });
     }
   };
 
@@ -88,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, isSigningIn, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
