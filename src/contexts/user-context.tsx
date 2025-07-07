@@ -7,12 +7,10 @@ import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
 import { useAuth } from './auth-context';
 import { useToast } from '@/hooks/use-toast';
-import { updateUserProfile } from '@/services/user';
 
 interface UserContextType {
   profile: UserProfile | null;
   isLoading: boolean;
-  updateProfile: (newProfileData: Partial<Pick<UserProfile, 'name' | 'email'>>) => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -26,13 +24,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleUserProfile = async () => {
       if (!authUser) {
-        console.log("UserProvider: No authenticated user. Clearing profile.");
+        console.log("UserProvider: Auth state changed, but no authenticated user found. Clearing profile.");
         setProfile(null);
         setIsLoading(false);
         return;
       }
 
-      console.log("UserProvider: Authenticated user found. Handling profile for UID:", authUser.uid);
+      console.log(`UserProvider: User ${authUser.uid} is authenticated. Checking Firestore for profile...`);
       setIsLoading(true);
       const userRef = doc(db, 'users', authUser.uid);
 
@@ -40,14 +38,14 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-          console.log("UserProvider: Profile document exists. Setting profile.");
+          console.log(`UserProvider: Profile for ${authUser.uid} found. Loading data.`);
           const data = userSnap.data();
           const userProfile: UserProfile = {
             id: userSnap.id,
             name: data.name || 'Anonymous',
             email: data.email || '',
             photoURL: data.photoURL || '',
-            joinedDate: data.joinedDate?.toDate ? data.joinedDate.toDate().toISOString() : new Date().toISOString(), // Handle timestamp object
+            joinedDate: data.joinedDate?.toDate ? data.joinedDate.toDate().toISOString() : new Date().toISOString(),
             honorsPoints: data.honorsPoints || 0,
             engagements: Array.isArray(data.engagements) ? data.engagements : [],
             semesterGrad: data.semesterGrad || null,
@@ -56,7 +54,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           };
           setProfile(userProfile);
         } else {
-          console.log("UserProvider: Profile document does NOT exist. Creating new profile.");
+          console.log(`UserProvider: No profile for ${authUser.uid}. Creating new profile document...`);
           const newProfileData = {
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
@@ -70,13 +68,13 @@ export function UserProvider({ children }: { children: ReactNode }) {
           };
 
           await setDoc(userRef, newProfileData);
-          console.log("UserProvider: New profile document created in Firestore.");
+          console.log(`UserProvider: Successfully created profile for ${authUser.uid}.`);
           
           const newProfile: UserProfile = {
             id: authUser.uid,
-            name: authUser.displayName || 'New User',
-            email: authUser.email || '',
-            photoURL: authUser.photoURL || '',
+            name: newProfileData.name,
+            email: newProfileData.email,
+            photoURL: newProfileData.photoURL,
             joinedDate: new Date().toISOString(),
             honorsPoints: 0,
             engagements: [],
@@ -92,43 +90,36 @@ export function UserProvider({ children }: { children: ReactNode }) {
           });
         }
       } catch (error) {
-        console.error("UserProvider: CRITICAL ERROR handling user profile:", error);
+        console.error(`UserProvider: CRITICAL ERROR handling profile for ${authUser.uid}:`, error);
         toast({
             variant: 'destructive',
             title: "Profile Error",
-            description: `Could not load or create your profile. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
-            duration: 10000,
+            description: `Could not load or create your profile. Please check Firestore permissions.`,
+            duration: 9000,
         });
         setProfile(null);
       } finally {
-        console.log("UserProvider: Finished handling profile. Setting loading to false.");
         setIsLoading(false);
       }
     };
-
-    if (!isAuthLoading && isFirebaseConfigured) {
-      handleUserProfile();
-    } else if (!isFirebaseConfigured) {
-        setIsLoading(false);
-    }
-  }, [authUser, isAuthLoading, toast]);
-  
-  const updateProfile = async (newProfileData: Partial<Pick<UserProfile, 'name' | 'email'>>) => {
-    if (!profile || !authUser) throw new Error("No profile to update.");
     
-    const oldProfile = profile;
-    setProfile(p => p ? {...p, ...newProfileData} : null);
-
-    try {
-        await updateUserProfile(authUser.uid, newProfileData);
-    } catch (error) {
-        setProfile(oldProfile);
-        throw error;
+    if (isAuthLoading) {
+        console.log("UserProvider: Auth is loading. Waiting for auth state to resolve...");
+        return;
     }
-  };
+
+    if (!isFirebaseConfigured) {
+        console.log("UserProvider: Firebase not configured. Aborting profile handling.");
+        setIsLoading(false);
+        return;
+    }
+
+    handleUserProfile();
+
+  }, [authUser, isAuthLoading, toast]);
 
   return (
-    <UserContext.Provider value={{ profile, isLoading, updateProfile }}>
+    <UserContext.Provider value={{ profile, isLoading }}>
       {children}
     </UserContext.Provider>
   );

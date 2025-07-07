@@ -2,7 +2,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, signOut as firebaseSignOut, User } from 'firebase/auth';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut as firebaseSignOut, User } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
@@ -26,8 +26,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // onAuthStateChanged is the recommended way to get the current user.
-    // It will fire once a redirect is complete and the auth state is known.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsLoading(false);
@@ -41,7 +39,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsLoading(false);
     });
 
-    // Clean up the subscription on unmount
     return () => unsubscribe();
   }, [toast]);
 
@@ -52,25 +49,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const provider = new GoogleAuthProvider();
     try {
-      // Set loading to true before initiating the redirect
       setIsLoading(true);
-      await signInWithRedirect(auth, provider);
-      // The onAuthStateChanged listener will handle the result of the redirect.
-    } catch (error) {
-      setIsLoading(false);
+      await signInWithPopup(auth, provider);
+      // After the popup closes, onAuthStateChanged will handle the update.
+      // No need to call setIsLoading(false) here, onAuthStateChanged will do it.
+    } catch (error: any) {
+      setIsLoading(false); // Set loading to false on error
       console.error("Error signing in with Google:", error);
-      toast({
-          variant: 'destructive',
-          title: "Sign-in Failed",
-          description: "Could not initiate sign-in with Google. Please try again."
-      });
+
+      if (error.code === 'auth/popup-closed-by-user') {
+          toast({
+              variant: 'default',
+              title: "Sign-in Cancelled",
+              description: "You closed the sign-in window before completing the process."
+          });
+      } else {
+          toast({
+              variant: 'destructive',
+              title: "Sign-in Failed",
+              description: "Could not sign in with Google. Please check the console for details."
+          });
+      }
     }
   };
 
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      // The onAuthStateChanged listener will set the user to null.
     } catch (error) {
        console.error("Error signing out:", error);
        toast({
