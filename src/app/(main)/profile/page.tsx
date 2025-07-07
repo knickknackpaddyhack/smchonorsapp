@@ -4,11 +4,8 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Award, Calendar, FileText, Pencil, Star, Trophy, CalendarCheck } from 'lucide-react';
+import { Award, Calendar, FileText, Star, Trophy, CalendarCheck } from 'lucide-react';
 import type { Engagement, UserProfile } from '@/lib/types';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getUserEngagements } from '@/services/user';
@@ -35,14 +32,10 @@ const benchmarks = [
 ];
 
 export default function ProfilePage() {
-    const { toast } = useToast();
     const { user: authUser } = useAuth();
-    const { profile, isLoading: isProfileLoading, updateProfile } = useUser();
+    const { profile, isLoading: isProfileLoading } = useUser();
     const [engagements, setEngagements] = useState<Engagement[]>([]);
     const [isEngagementsLoading, setIsEngagementsLoading] = useState(true);
-    const [isEditing, setIsEditing] = useState(false);
-    const [tempName, setTempName] = useState('');
-    const [tempEmail, setTempEmail] = useState('');
 
     useEffect(() => {
         async function loadEngagements() {
@@ -54,47 +47,6 @@ export default function ProfilePage() {
         }
         loadEngagements();
     }, [authUser]);
-
-    useEffect(() => {
-        if (profile) {
-            setTempName(profile.name);
-            setTempEmail(profile.email);
-        }
-    }, [profile]);
-
-    const handleEdit = () => {
-        if (profile) {
-            setTempName(profile.name);
-            setTempEmail(profile.email);
-            setIsEditing(true);
-        }
-    }
-
-    const handleSave = async () => {
-        if (!profile) return;
-        
-        try {
-            await updateProfile({ name: tempName, email: tempEmail });
-            setIsEditing(false);
-            toast({
-                title: "Profile updated successfully!",
-            });
-        } catch (error) {
-            toast({
-                variant: 'destructive',
-                title: "Update Failed",
-                description: "Could not save profile changes. Please try again.",
-            });
-        }
-    };
-
-    const handleCancel = () => {
-        setIsEditing(false);
-        if (profile) {
-            setTempName(profile.name);
-            setTempEmail(profile.email);
-        }
-    }
     
     const { currentLevel, nextBenchmark, progressPercentage } = useMemo(() => {
         const currentPoints = profile?.honorsPoints || 0;
@@ -161,43 +113,11 @@ export default function ProfilePage() {
                             <AvatarFallback>{profile.name.split(' ').map(n => n[0]).join('')}</AvatarFallback>
                         </Avatar>
                         <div className="text-center sm:text-left">
-                            {isEditing ? (
-                                <div className="space-y-2">
-                                    <Input 
-                                        id="name"
-                                        value={tempName}
-                                        onChange={(e) => setTempName(e.target.value)}
-                                        className="text-2xl font-bold font-headline"
-                                    />
-                                    <Input
-                                        id="email"
-                                        type="email"
-                                        value={tempEmail}
-                                        onChange={(e) => setTempEmail(e.target.value)}
-                                        className="text-muted-foreground"
-                                        readOnly
-                                    />
-                                </div>
-                            ) : (
-                                <>
-                                    <h2 className="text-2xl font-bold font-headline">{profile.name}</h2>
-                                    <p className="text-muted-foreground">{profile.email}</p>
-                                </>
-                            )}
-                            <p className="text-sm text-muted-foreground mt-1">Joined on {profile.joinedDate}</p>
+                            <h2 className="text-2xl font-bold font-headline">{profile.name}</h2>
+                            <p className="text-muted-foreground">{profile.email}</p>
+                            <p className="text-sm text-muted-foreground mt-1">Joined on {new Date(profile.joinedDate).toLocaleDateString()}</p>
                         </div>
                     </div>
-                    {isEditing ? (
-                        <div className="flex gap-2">
-                            <Button onClick={handleSave}>Save</Button>
-                            <Button variant="outline" onClick={handleCancel}>Cancel</Button>
-                        </div>
-                    ) : (
-                        <Button variant="outline" size="icon" onClick={handleEdit}>
-                            <Pencil className="h-4 w-4" />
-                            <span className="sr-only">Edit Profile</span>
-                        </Button>
-                    )}
                 </div>
             </CardHeader>
         </Card>

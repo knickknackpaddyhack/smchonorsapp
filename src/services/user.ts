@@ -16,13 +16,12 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
 
         if (userSnap.exists()) {
             const data = userSnap.data();
-            // Explicitly construct the profile object for type safety
             const userProfile: UserProfile = {
                 id: userSnap.id,
                 name: data.name || 'Anonymous',
                 email: data.email || '',
                 photoURL: data.photoURL || '',
-                joinedDate: data.joinedDate || new Date().toISOString(),
+                joinedDate: data.joinedDate?.toDate ? data.joinedDate.toDate().toISOString() : new Date().toISOString(),
                 honorsPoints: data.honorsPoints || 0,
                 engagements: Array.isArray(data.engagements) ? data.engagements : [],
                 semesterGrad: data.semesterGrad || null,
@@ -38,7 +37,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     }
 }
 
-export async function updateUserProfile(uid: string, profileData: Partial<Omit<UserProfile, 'id' | 'engagements'>>): Promise<void> {
+export async function updateUserProfile(uid: string, profileData: Partial<Omit<UserProfile, 'id' | 'engagements' | 'honorsPoints' | 'joinedDate'>>): Promise<void> {
    if (!isFirebaseConfigured) {
      throw new Error(`Firebase not configured. Missing keys: ${missingKeys.join(', ')}. Please check your root .env file.`);
    }
@@ -62,7 +61,6 @@ export async function getUserEngagements(uid: string): Promise<Engagement[]> {
     try {
         const userProfile = await getUserProfile(uid);
         if (userProfile && Array.isArray(userProfile.engagements)) {
-            // Sort engagements by date, descending
             return userProfile.engagements.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
         }
         return [];

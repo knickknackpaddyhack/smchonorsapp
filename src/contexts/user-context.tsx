@@ -2,12 +2,12 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db, isFirebaseConfigured } from '@/lib/firebase';
 import type { UserProfile } from '@/lib/types';
-import { updateUserProfile } from '@/services/user';
 import { useAuth } from './auth-context';
 import { useToast } from '@/hooks/use-toast';
+import { updateUserProfile } from '@/services/user';
 
 interface UserContextType {
   profile: UserProfile | null;
@@ -26,34 +26,52 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const handleUserProfile = async () => {
       if (!authUser) {
+        console.log("UserProvider: No authenticated user. Clearing profile.");
         setProfile(null);
         setIsLoading(false);
         return;
       }
 
+      console.log("UserProvider: Authenticated user found. Handling profile for UID:", authUser.uid);
       setIsLoading(true);
+      const userRef = doc(db, 'users', authUser.uid);
+
       try {
-        const userRef = doc(db, 'users', authUser.uid);
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
-            const data = userSnap.data();
-            // Explicitly construct the profile object for type safety
-            const userProfile: UserProfile = {
-                id: userSnap.id,
-                name: data.name || 'Anonymous',
-                email: data.email || '',
-                photoURL: data.photoURL || '',
-                joinedDate: data.joinedDate || new Date().toISOString(),
-                honorsPoints: data.honorsPoints || 0,
-                engagements: Array.isArray(data.engagements) ? data.engagements : [],
-                semesterGrad: data.semesterGrad || null,
-                semesterJoined: data.semesterJoined || null,
-                termStartSMC: data.termStartSMC || null,
-            };
-            setProfile(userProfile);
+          console.log("UserProvider: Profile document exists. Setting profile.");
+          const data = userSnap.data();
+          const userProfile: UserProfile = {
+            id: userSnap.id,
+            name: data.name || 'Anonymous',
+            email: data.email || '',
+            photoURL: data.photoURL || '',
+            joinedDate: data.joinedDate?.toDate ? data.joinedDate.toDate().toISOString() : new Date().toISOString(), // Handle timestamp object
+            honorsPoints: data.honorsPoints || 0,
+            engagements: Array.isArray(data.engagements) ? data.engagements : [],
+            semesterGrad: data.semesterGrad || null,
+            semesterJoined: data.semesterJoined || null,
+            termStartSMC: data.termStartSMC || null,
+          };
+          setProfile(userProfile);
         } else {
-          // Profile doesn't exist, create it right here.
+          console.log("UserProvider: Profile document does NOT exist. Creating new profile.");
+          const newProfileData = {
+            name: authUser.displayName || 'New User',
+            email: authUser.email || '',
+            photoURL: authUser.photoURL || '',
+            joinedDate: serverTimestamp(),
+            honorsPoints: 0,
+            engagements: [],
+            semesterGrad: null,
+            semesterJoined: null,
+            termStartSMC: null,
+          };
+
+          await setDoc(userRef, newProfileData);
+          console.log("UserProvider: New profile document created in Firestore.");
+          
           const newProfile: UserProfile = {
             id: authUser.uid,
             name: authUser.displayName || 'New User',
@@ -67,20 +85,23 @@ export function UserProvider({ children }: { children: ReactNode }) {
             termStartSMC: null,
           };
           
-          const { id, ...profileToSave } = newProfile;
-          await setDoc(userRef, profileToSave);
-          
           setProfile(newProfile);
+          toast({
+            title: "Welcome!",
+            description: "Your profile has been created.",
+          });
         }
       } catch (error) {
-        console.error("Error handling user profile:", error);
+        console.error("UserProvider: CRITICAL ERROR handling user profile:", error);
         toast({
             variant: 'destructive',
             title: "Profile Error",
-            description: "Could not load or create your profile. Please check your Firestore security rules and configuration.",
+            description: `Could not load or create your profile. Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+            duration: 10000,
         });
         setProfile(null);
       } finally {
+        console.log("UserProvider: Finished handling profile. Setting loading to false.");
         setIsLoading(false);
       }
     };
