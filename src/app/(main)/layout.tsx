@@ -169,7 +169,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
   
-  const { user: authUser, isLoading: isAuthLoading } = useAuth();
+  const { user: authUser, isLoading: isAuthLoading, isSigningIn } = useAuth();
   const { profile, isLoading: isProfileLoading } = useUser();
 
   const renderContent = () => {
@@ -177,7 +177,7 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         return <FirebaseNotConfigured />;
     }
       
-    if (isAuthLoading || isProfileLoading) {
+    if ((isAuthLoading || isProfileLoading) && !isSigningIn) {
       return (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
