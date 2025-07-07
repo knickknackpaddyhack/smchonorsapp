@@ -29,6 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    // This function will be cleaned up by the return statement in useEffect.
+    let unsubscribe: () => void;
+
     const initializeAuth = async () => {
       if (!isFirebaseConfigured) {
         console.log("AuthProvider: Firebase not configured. Skipping auth logic.");
@@ -37,8 +40,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       
       try {
+        // This is the critical fix: ensuring persistence is set and awaited
+        // before the onAuthStateChanged listener is set up. This prevents a
+        // race condition where the auth state is checked before the session
+        // is properly loaded from storage after a redirect.
         console.log("AuthProvider: Setting auth persistence...");
-        // This is the critical fix: ensuring persistence is set before setting up the listener.
         await setPersistence(auth, browserLocalPersistence);
         console.log("AuthProvider: Auth persistence set successfully.");
       } catch (error) {
@@ -47,7 +53,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // onAuthStateChanged is the single source of truth for the user's state.
       // It will fire after the redirect is complete and the session is restored from local storage.
-      const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
         console.log("AuthProvider: onAuthStateChanged listener fired.");
         if (currentUser) {
           console.log("AuthProvider: Listener found authenticated user:", currentUser.displayName);
@@ -59,15 +65,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("AuthProvider: Auth state determined, isLoading set to false.");
         setIsLoading(false);
       });
-
-      // Cleanup function to remove the listener when the component unmounts.
-      return () => {
-        console.log("AuthProvider: Cleaning up onAuthStateChanged listener.");
-        unsubscribe();
-      };
     };
 
     initializeAuth();
+
+    // Cleanup function to remove the listener when the component unmounts.
+    return () => {
+      if (unsubscribe) {
+        console.log("AuthProvider: Cleaning up onAuthStateChanged listener.");
+        unsubscribe();
+      }
+    };
   }, []); // Empty dependency array ensures this runs only once on mount.
 
   const signInWithGoogle = async () => {
