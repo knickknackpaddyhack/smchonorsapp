@@ -1,4 +1,3 @@
-
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
@@ -46,13 +45,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("AuthProvider: Listener has NO authenticated user.");
         setUser(null);
       }
-      // This is the most important part: we only declare auth state "resolved"
-      // AFTER the listener has fired for the first time.
       console.log("AuthProvider: Auth state determined. isLoading set to false.");
       setIsLoading(false);
     });
 
-    // Cleanup subscription on unmount
     return () => {
         console.log("AuthProvider: Cleaning up listener.");
         unsubscribe();
@@ -66,13 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const provider = new GoogleAuthProvider();
     try {
-      // Set persistence BEFORE the redirect. This is critical for the session
-      // to survive the redirect.
       await setPersistence(auth, browserLocalPersistence);
       console.log("AuthProvider: Auth persistence set. Initiating redirect sign-in.");
       await signInWithRedirect(auth, provider);
-      // Note: The code flow stops here as the browser redirects.
-      // The result is handled by onAuthStateChanged when the user returns.
     } catch (error: any) {
       console.error('Error initiating sign in', error);
       toast({ variant: 'destructive', title: 'Sign-in Failed', description: 'Could not start the sign-in process.' });
@@ -83,7 +75,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
-      // The onAuthStateChanged listener will handle clearing the user state.
     } catch (error) {
       console.error('Error signing out:', error);
       toast({ variant: 'destructive', title: 'Sign-out Failed', description: 'Could not sign out.' });

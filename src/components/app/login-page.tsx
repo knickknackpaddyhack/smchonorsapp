@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/auth-context';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Award } from 'lucide-react';
+import { AuthDomainWarning } from './auth-domain-warning';
 
 export function LoginPage() {
   const { signInWithGoogle } = useAuth();
@@ -25,6 +26,7 @@ export function LoginPage() {
           <Button onClick={signInWithGoogle} className="w-full">
             Sign in with Google
           </Button>
+          <AuthDomainWarning />
         </CardContent>
         <CardFooter>
             <p className="text-xs text-muted-foreground text-center w-full">By signing in, you agree to our terms and conditions.</p>
