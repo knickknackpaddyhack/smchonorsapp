@@ -59,14 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener will handle the user state update.
     } catch (error: any) {
-      console.error('Error during Google Sign-In with popup:', error);
+      // Log the full error for better debugging
+      console.error('Detailed error during Google Sign-In with popup:', error);
       
       let title = 'Sign-in Failed';
       let description = 'An unknown error occurred during sign-in.';
 
       if (error.code === 'auth/popup-closed-by-user') {
         title = 'Sign-in Cancelled';
-        description = 'The sign-in popup was closed. If the popup was blank or showed an error, please check your API key restrictions in the Google Cloud Console.';
+        description = 'The sign-in popup was closed. If the popup was blank or showed an error, this is often due to an API key misconfiguration. Please check your API key restrictions in the Google Cloud Console and ensure the Identity Toolkit API is enabled.';
       } else if (error.code === 'auth/popup-blocked') {
           title = 'Popup Blocked'
           description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.'
@@ -75,7 +76,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       toast({ 
         variant: 'destructive', 
         title: title, 
-        description: description
+        description: description,
+        duration: 9000,
       });
     }
   };
