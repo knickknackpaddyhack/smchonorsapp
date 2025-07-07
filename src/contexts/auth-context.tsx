@@ -6,6 +6,7 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithRedirect,
+  getRedirectResult,
   signOut as firebaseSignOut,
   User,
 } from 'firebase/auth';
@@ -33,32 +34,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    // onAuthStateChanged is the single source of truth. It fires on sign-in,
-    // sign-out, and when the page loads, automatically handling the result
-    // of a sign-in redirect.
+    // Set up the onAuthStateChanged listener. This is the single source of truth.
+    // It will fire whenever the user's auth state changes, including after a redirect.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       console.log("AuthProvider: onAuthStateChanged listener fired.");
       if (user) {
-        // User is signed in.
-        console.log("AuthProvider: User is authenticated:", user.displayName);
+        console.log("AuthProvider: Listener found authenticated user:", user.displayName);
         setUser(user);
       } else {
-        // User is signed out.
-        console.log("AuthProvider: User is not authenticated.");
+        console.log("AuthProvider: Listener found NO authenticated user.");
         setUser(null);
       }
-      // The initial authentication check is complete.
-      setIsLoading(false);
+      // We set loading to false only after the listener has given us an initial state.
       console.log("AuthProvider: isLoading set to false.");
+      setIsLoading(false);
     });
 
-    // Cleanup subscription on unmount
-    return () => {
-        console.log("AuthProvider: Cleaning up listener.");
-        unsubscribe();
-    }
-  }, [toast]);
+    // When the component mounts, also check for a redirect result.
+    // This is crucial for the redirect flow. `onAuthStateChanged` will still
+    // be the one to update the state, but this call triggers the processing.
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // If we get a result here, it means the user just signed in via redirect.
+          // The onAuthStateChanged listener will shortly fire with the new user.
+          console.log("AuthProvider: Successfully processed redirect result for user:", result.user.displayName);
+          toast({
+            title: `Welcome, ${result.user.displayName}!`,
+            description: "You have been successfully signed in.",
+          });
+        }
+      })
+      .catch((error) => {
+        console.error("AuthProvider: Error processing redirect result:", error);
+        toast({
+          variant: 'destructive',
+          title: "Sign-in Failed",
+          description: "Could not process login information. Please try again."
+        });
+      });
 
+    // Cleanup the listener when the component unmounts.
+    return () => {
+      console.log("AuthProvider: Cleaning up listener.");
+      unsubscribe();
+    };
+  }, []);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -68,7 +89,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const provider = new GoogleAuthProvider();
     try {
-      // Start the redirect sign-in process.
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Error initiating sign in with Google redirect:", error);
@@ -84,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
-      // The onAuthStateChanged listener will handle setting user to null.
+      toast({ title: "Signed Out", description: "You have been successfully signed out." });
     } catch (error) {
        console.error("Error signing out:", error);
        toast({
