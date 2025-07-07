@@ -9,8 +9,7 @@ import {
   signOut as firebaseSignOut,
   User,
   setPersistence,
-  browserLocalPersistence,
-  getRedirectResult,
+  browserLocalPersistence
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -30,56 +29,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    let unsubscribe: (() => void) | undefined = undefined;
-
-    const initializeAuth = async () => {
-      console.log('AuthProvider: Starting auth processing...');
-      if (!isFirebaseConfigured) {
-        console.log('AuthProvider: Firebase not configured. Skipping.');
+    if (!isFirebaseConfigured) {
+        console.log("AuthProvider: Firebase not configured. Skipping auth listener.");
         setIsLoading(false);
         return;
+    }
+
+    console.log("AuthProvider: Setting up onAuthStateChanged listener.");
+
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      console.log("AuthProvider: onAuthStateChanged listener fired.");
+      if (currentUser) {
+        console.log(`AuthProvider: Listener has an authenticated user: ${currentUser.displayName}`);
+        setUser(currentUser);
+      } else {
+        console.log("AuthProvider: Listener has NO authenticated user.");
+        setUser(null);
       }
+      // This is the most important part: we only declare auth state "resolved"
+      // AFTER the listener has fired for the first time.
+      console.log("AuthProvider: Auth state determined. isLoading set to false.");
+      setIsLoading(false);
+    });
 
-      try {
-        // This is the key: getRedirectResult must be called on every page load.
-        // It resolves to the signed-in user if the page is the result of a
-        // redirect sign-in, or to null otherwise.
-        const result = await getRedirectResult(auth);
-        if (result) {
-          console.log(`AuthProvider: User found from redirect: ${result.user.displayName}`);
-          // The user is now signed in. The onAuthStateChanged listener below will
-          // fire with this user and handle setting the state.
-        } else {
-            console.log('AuthProvider: No redirect result. This is a normal page load.');
-        }
-      } catch (error) {
-        console.error('AuthProvider: Error getting redirect result.', error);
-      }
-
-      // onAuthStateChanged is the single source of truth. It fires after
-      // getRedirectResult completes and whenever the auth state changes.
-      unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        console.log('AuthProvider: onAuthStateChanged fired.');
-        if (currentUser) {
-          console.log(`AuthProvider: Listener has an authenticated user: ${currentUser.displayName}`);
-          setUser(currentUser);
-        } else {
-          console.log('AuthProvider: Listener has NO authenticated user.');
-          setUser(null);
-        }
-        console.log('AuthProvider: Auth state determined. isLoading set to false.');
-        setIsLoading(false);
-      });
-    };
-
-    initializeAuth();
-
+    // Cleanup subscription on unmount
     return () => {
-      if (unsubscribe) {
-        console.log('AuthProvider: Cleaning up listener.');
+        console.log("AuthProvider: Cleaning up listener.");
         unsubscribe();
-      }
-    };
+    }
   }, []);
 
   const signInWithGoogle = async () => {
@@ -89,9 +66,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const provider = new GoogleAuthProvider();
     try {
-      // Must set persistence BEFORE the redirect.
+      // Set persistence BEFORE the redirect. This is critical for the session
+      // to survive the redirect.
       await setPersistence(auth, browserLocalPersistence);
+      console.log("AuthProvider: Auth persistence set. Initiating redirect sign-in.");
       await signInWithRedirect(auth, provider);
+      // Note: The code flow stops here as the browser redirects.
+      // The result is handled by onAuthStateChanged when the user returns.
     } catch (error: any) {
       console.error('Error initiating sign in', error);
       toast({ variant: 'destructive', title: 'Sign-in Failed', description: 'Could not start the sign-in process.' });
@@ -102,6 +83,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
+      // The onAuthStateChanged listener will handle clearing the user state.
     } catch (error) {
       console.error('Error signing out:', error);
       toast({ variant: 'destructive', title: 'Sign-out Failed', description: 'Could not sign out.' });
