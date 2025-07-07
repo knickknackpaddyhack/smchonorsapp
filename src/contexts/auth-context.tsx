@@ -60,16 +60,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     } catch (error: any) {
       console.error('Error during Google Sign-In with popup:', error);
       
+      let title = 'Sign-in Failed';
       let description = 'An unknown error occurred during sign-in.';
+
       if (error.code === 'auth/popup-closed-by-user') {
-        description = 'The sign-in popup was closed before completion.';
+        title = 'Sign-in Cancelled';
+        description = 'The sign-in popup was closed. If the popup was blank or showed an error, please check your API key restrictions in the Google Cloud Console.';
       } else if (error.code === 'auth/popup-blocked') {
-          description = 'Popup was blocked by the browser. Please allow popups for this site and try again.'
+          title = 'Popup Blocked'
+          description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.'
       }
 
       toast({ 
         variant: 'destructive', 
-        title: 'Sign-in Failed', 
+        title: title, 
         description: description
       });
     }
