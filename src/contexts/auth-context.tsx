@@ -8,6 +8,7 @@ import {
   signInWithRedirect, 
   signOut as firebaseSignOut, 
   User,
+  getRedirectResult,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -27,18 +28,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      setIsLoading(false);
-      return;
-    }
-
+    // This is the primary listener for auth state changes.
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       setUser(user);
       setIsLoading(false);
     });
 
+    // We also explicitly check for a redirect result on mount.
+    // This handles the case where the user has just signed in via redirect.
+    getRedirectResult(auth)
+      .then((result) => {
+        if (result) {
+          // A user signed in. onAuthStateChanged will handle setting the state.
+          // We can add a welcome toast here if we want.
+          console.log("Sign-in redirect result processed successfully for:", result.user.displayName);
+        }
+        // If result is null, it means this page load was not from a sign-in redirect.
+      })
+      .catch((error) => {
+        console.error("Error processing redirect result:", error);
+        toast({
+          variant: 'destructive',
+          title: 'Sign-In Failed',
+          description: `An error occurred during the sign-in process: ${error.message}`,
+          duration: 9000,
+        });
+      });
+
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -51,13 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await signInWithRedirect(auth, provider);
     } catch (error: any) {
       console.error("Error initiating sign in with Google:", error);
-      if (error.code !== 'auth/redirect-cancelled-by-user') {
-        toast({
-            variant: 'destructive',
-            title: "Sign-in Failed",
-            description: "Could not start the sign-in process. Please check the console for details."
-        });
-      }
+      toast({
+          variant: 'destructive',
+          title: "Sign-in Failed",
+          description: "Could not start the sign-in process. Please check the console for details."
+      });
     }
   };
 
@@ -65,6 +81,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
+      setUser(null); // Explicitly clear the user state
     } catch (error) {
        console.error("Error signing out:", error);
        toast({
