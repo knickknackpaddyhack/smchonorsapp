@@ -22,9 +22,12 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
                 name: data.name || 'Anonymous',
                 email: data.email || '',
                 photoURL: data.photoURL || '',
-                joinedDate: data.joinedDate || new Date().toLocaleDateString(),
+                joinedDate: data.joinedDate || new Date().toISOString(),
                 honorsPoints: data.honorsPoints || 0,
                 engagements: Array.isArray(data.engagements) ? data.engagements : [],
+                semesterGrad: data.semesterGrad || null,
+                semesterJoined: data.semesterJoined || null,
+                termStartSMC: data.termStartSMC || null,
             };
             return userProfile;
         }

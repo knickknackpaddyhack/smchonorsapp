@@ -44,9 +44,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
                 name: data.name || 'Anonymous',
                 email: data.email || '',
                 photoURL: data.photoURL || '',
-                joinedDate: data.joinedDate || new Date().toLocaleDateString(),
+                joinedDate: data.joinedDate || new Date().toISOString(),
                 honorsPoints: data.honorsPoints || 0,
                 engagements: Array.isArray(data.engagements) ? data.engagements : [],
+                semesterGrad: data.semesterGrad || null,
+                semesterJoined: data.semesterJoined || null,
+                termStartSMC: data.termStartSMC || null,
             };
             setProfile(userProfile);
         } else {
@@ -56,9 +59,12 @@ export function UserProvider({ children }: { children: ReactNode }) {
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
             photoURL: authUser.photoURL || '',
-            joinedDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            joinedDate: new Date().toISOString(),
             honorsPoints: 0,
             engagements: [],
+            semesterGrad: null,
+            semesterJoined: null,
+            termStartSMC: null,
           };
           
           const { id, ...profileToSave } = newProfile;

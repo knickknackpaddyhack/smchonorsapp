@@ -1,4 +1,5 @@
 
+
 export interface Activity {
   id: string;
   title: string;
@@ -35,6 +36,9 @@ export interface UserProfile {
   joinedDate: string;
   honorsPoints: number;
   engagements: Engagement[];
+  semesterGrad: string | null;
+  semesterJoined: string | null;
+  termStartSMC: string | null;
 }
 
 export interface Engagement {

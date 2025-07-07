@@ -13,6 +13,7 @@ import {
   Award,
   Loader2,
   LogOut,
+  Terminal,
 } from 'lucide-react';
 
 import {
@@ -34,6 +35,9 @@ import { AuthProvider, useAuth } from '@/contexts/auth-context';
 import { Skeleton } from '@/components/ui/skeleton';
 import { LoginPage } from '@/components/app/login-page';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
+import { isFirebaseConfigured, missingKeys } from '@/lib/firebase';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 const menuItems = [
   { href: '/dashboard', label: 'Activity Dashboard', icon: LayoutDashboard },
@@ -122,6 +126,45 @@ function UserMenu() {
     )
 }
 
+function FirebaseNotConfigured() {
+    return (
+        <div className="flex items-center justify-center h-full bg-muted/40 p-4">
+            <Card className="max-w-xl w-full">
+                <CardHeader>
+                    <CardTitle className="font-headline text-2xl">Firebase Not Configured</CardTitle>
+                    <CardDescription>
+                        Your application is missing its Firebase configuration. Please follow the steps below to fix it.
+                    </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <p>To use Firebase services like authentication and database, you need to provide your project's configuration keys in an environment file.</p>
+                    <Alert>
+                        <Terminal className="h-4 w-4" />
+                        <AlertTitle>Action Required</AlertTitle>
+                        <AlertDescription>
+                            <ol className="list-decimal list-inside space-y-2">
+                                <li>Create a file named <code>.env</code> in the root directory of your project (if it doesn&apos;t exist).</li>
+                                <li>Open your Firebase project settings and find your web app&apos;s configuration.</li>
+                                <li>Copy the configuration keys into the <code>.env</code> file. The keys should be prefixed with <code>NEXT_PUBLIC_</code>.</li>
+                            </ol>
+                        </AlertDescription>
+                    </Alert>
+                    <div className="text-sm p-4 bg-secondary rounded-md font-mono text-secondary-foreground overflow-x-auto">
+                        <p># .env</p>
+                        <p>NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key</p>
+                        <p>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain</p>
+                        <p>NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id</p>
+                        <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket</p>
+                        <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id</p>
+                        <p>NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id</p>
+                    </div>
+                     <p className="text-sm text-muted-foreground">The following keys are currently missing: <strong>{missingKeys.join(', ')}</strong>. After adding them, you may need to restart the development server.</p>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}
+
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
@@ -130,6 +173,10 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const { profile, isLoading: isProfileLoading } = useUser();
 
   const renderContent = () => {
+    if (!isFirebaseConfigured) {
+        return <FirebaseNotConfigured />;
+    }
+      
     if (isAuthLoading || isProfileLoading) {
       return (
         <div className="flex items-center justify-center h-full">
