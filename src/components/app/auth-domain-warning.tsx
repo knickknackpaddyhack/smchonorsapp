@@ -12,6 +12,13 @@ export function AuthDomainWarning() {
     const [currentHostname, setCurrentHostname] = useState('');
 
     useEffect(() => {
+        // This logic is flawed for cloud development environments because client-side
+        // code cannot access the full list of "Authorized Domains" from Firebase settings.
+        // It can only see the default authDomain, which will not match the cloud workstation URL,
+        // leading to a false positive warning. The component is disabled by always returning null.
+        return;
+
+        /*
         if (typeof window === 'undefined' || !isFirebaseConfigured || !auth?.config?.authDomain) {
             return;
         }
@@ -22,18 +29,19 @@ export function AuthDomainWarning() {
         setConfiguredDomain(configured);
         setCurrentHostname(current);
 
-        // localhost is usually authorized by default.
         if (current === 'localhost') {
             setIsMismatched(false);
             return;
         }
 
-        // Firebase authDomain is 'project-id.firebaseapp.com'.
-        // If the app is running on a different domain, it needs to be added.
         if (configured !== current) {
              setIsMismatched(true);
         }
+        */
     }, []);
+
+    // The component is disabled to prevent false positives in this environment.
+    return null;
 
     if (!isMismatched) {
         return null;
