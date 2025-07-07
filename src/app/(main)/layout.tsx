@@ -169,24 +169,45 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
   
-  const { user: authUser, isLoading: isAuthLoading, isSigningIn } = useAuth();
+  const { user: authUser, isLoading: isAuthLoading } = useAuth();
   const { profile, isLoading: isProfileLoading } = useUser();
 
   const renderContent = () => {
     if (!isFirebaseConfigured) {
-        return <FirebaseNotConfigured />;
+      return <FirebaseNotConfigured />;
     }
-      
-    if ((isAuthLoading || isProfileLoading) && !isSigningIn) {
+
+    // While we wait to see if a user is logged in, show a spinner.
+    if (isAuthLoading) {
       return (
         <div className="flex items-center justify-center h-full">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       );
     }
-    if (!authUser || !profile) {
+
+    // If auth is resolved and there's no user, they need to log in.
+    if (!authUser) {
       return <LoginPage />;
     }
+    
+    // If there IS an authenticated user, but we're still loading their profile,
+    // show a spinner. This is now safe because the LoginPage is already unmounted.
+    if (isProfileLoading) {
+      return (
+        <div className="flex items-center justify-center h-full">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+
+    // If we have an authUser but no profile (e.g., a creation error),
+    // send them back to the login page to try again.
+    if (!profile) {
+      return <LoginPage />;
+    }
+
+    // If we have both the user and their profile, show the app.
     return children;
   };
 
