@@ -22,20 +22,25 @@ export function UserProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
+    console.log(`UserProvider: useEffect triggered. isAuthLoading: ${isAuthLoading}, authUser available: ${!!authUser}`);
+
     const handleUserProfile = async () => {
       // If auth is still loading, we must wait.
       if (isAuthLoading) {
+        console.log("UserProvider: Auth is loading. Waiting for auth state to resolve...");
         return;
       }
       
       // If auth is resolved and there is no user, they are logged out.
       if (!authUser) {
+        console.log("UserProvider: Auth state changed, but no authenticated user found. Clearing profile.");
         setProfile(null);
         setIsLoading(false);
         return;
       }
       
       // If we get here, we have a valid authUser. Start the profile loading process.
+      console.log(`UserProvider: Auth resolved with user ${authUser.uid}. Handling profile...`);
       setIsLoading(true);
       const userRef = doc(db, 'users', authUser.uid);
 
@@ -43,6 +48,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         const userSnap = await getDoc(userRef);
 
         if (userSnap.exists()) {
+          console.log(`UserProvider: Profile found for user ${authUser.uid}.`);
           const data = userSnap.data();
           const userProfile: UserProfile = {
             id: userSnap.id,
@@ -59,6 +65,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
           setProfile(userProfile);
         } else {
           // User exists in Auth, but not in Firestore. Create their profile.
+          console.log(`UserProvider: No profile found for ${authUser.uid}. Creating new profile.`);
           const newProfileData = {
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
@@ -90,16 +97,18 @@ export function UserProvider({ children }: { children: ReactNode }) {
         toast({
             variant: 'destructive',
             title: "Profile Error",
-            description: `Could not load or create your profile. Please check Firestore permissions.`,
+            description: `Could not load or create your profile. Please check your Firestore permissions.`,
             duration: 9000,
         });
         setProfile(null);
       } finally {
+        console.log(`UserProvider: Profile handling finished for ${authUser.uid}.`);
         setIsLoading(false);
       }
     };
     
     if (!isFirebaseConfigured) {
+        console.log("UserProvider: Firebase not configured. Skipping profile logic.");
         setIsLoading(false);
         return;
     }
