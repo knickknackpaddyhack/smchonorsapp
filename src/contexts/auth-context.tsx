@@ -2,8 +2,8 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, getRedirectResult, signOut as firebaseSignOut, User } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { onAuthStateChanged, GoogleAuthProvider, signInWithRedirect, signOut as firebaseSignOut, User } from 'firebase/auth';
+import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
@@ -18,55 +18,44 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isProcessingRedirect, setIsProcessingRedirect] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // This effect runs once on mount to handle the redirect result.
-    // It helps catch any errors that occurred during the Google sign-in flow.
-    getRedirectResult(auth)
-      .catch((error) => {
-        console.error("Firebase redirect result error:", error);
-        toast({
-            variant: 'destructive',
-            title: "Sign-in Failed",
-            description: `Could not complete sign-in. Error: ${error.code}`
-        });
-      })
-      .finally(() => {
-        setIsProcessingRedirect(false);
-      });
-  }, [toast]);
-
-  useEffect(() => {
-    // This effect establishes the persistent auth state listener.
-    // It waits until the redirect processing is finished to avoid race conditions.
-    if (isProcessingRedirect) {
+    if (!isFirebaseConfigured) {
+      setIsLoading(false);
       return;
     }
 
-    if (!isFirebaseConfigured) {
-        setIsLoading(false);
-        return;
-    }
-
+    // onAuthStateChanged is the recommended way to get the current user.
+    // It will fire once a redirect is complete and the auth state is known.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsLoading(false);
+    }, (error) => {
+      console.error("Firebase Auth Error:", error);
+      toast({
+          variant: 'destructive',
+          title: "Authentication Error",
+          description: "An error occurred during authentication."
+      });
+      setIsLoading(false);
     });
 
+    // Clean up the subscription on unmount
     return () => unsubscribe();
-  }, [isProcessingRedirect]);
+  }, [toast]);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
-        toast({ variant: 'destructive', title: "Firebase Not Configured", description: "Please add your Firebase config to the .env file." });
+        toast({ variant: 'destructive', title: "Firebase Not Configured", description: `Please add your Firebase config to the .env file. Missing: ${missingKeys.join(', ')}` });
         return;
     }
     const provider = new GoogleAuthProvider();
     try {
+      // Set loading to true before initiating the redirect
       setIsLoading(true);
       await signInWithRedirect(auth, provider);
+      // The onAuthStateChanged listener will handle the result of the redirect.
     } catch (error) {
       setIsLoading(false);
       console.error("Error signing in with Google:", error);
@@ -81,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     try {
       await firebaseSignOut(auth);
-      setUser(null);
+      // The onAuthStateChanged listener will set the user to null.
     } catch (error) {
        console.error("Error signing out:", error);
        toast({
@@ -92,10 +81,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const finalIsLoading = isLoading || isProcessingRedirect;
-
   return (
-    <AuthContext.Provider value={{ user, isLoading: finalIsLoading, signInWithGoogle, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signInWithGoogle, signOut }}>
       {children}
     </AuthContext.Provider>
   );
