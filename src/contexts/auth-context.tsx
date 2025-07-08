@@ -34,8 +34,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    // The onAuthStateChanged listener is the single source of truth.
-    // It will be notified of the successful login from signInWithPopup.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
@@ -71,7 +69,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       } else if (error.code === 'auth/popup-blocked') {
           title = 'Popup Blocked'
           description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.'
+      } else if (error.code === 'auth/operation-not-allowed') {
+        title = 'Sign-in Method Disabled';
+        description = 'The "Google" sign-in method is not enabled for this project, or the support email is missing. Please enable it in the Firebase Console under Authentication > Sign-in method.';
       }
+
 
       toast({ 
         variant: 'destructive', 
