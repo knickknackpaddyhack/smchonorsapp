@@ -31,7 +31,7 @@ const eventTypes: { name: ProposalEventType, icon: React.ElementType, descriptio
     { name: 'Social Event', icon: PartyPopper, description: 'Engage the community with fun, informal gatherings.', colorVar: 'hsl(var(--chart-1))' },
     { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.', colorVar: 'hsl(var(--chart-2))' },
     { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with workshops, lectures, or study groups.', colorVar: 'hsl(var(--chart-3))' },
-    { name: 'Colloquium', icon: MessageSquareQuote, description: 'Share knowledge and interests through presentations, discussions, and activities.', colorVar: 'hsl(var(--chart-4))' },
+    { name: 'Colloquium', icon: MessageSquareQuote, description: 'Share knowledge and interests through discussions and activities.', colorVar: 'hsl(var(--chart-4))' },
 ];
 
 
