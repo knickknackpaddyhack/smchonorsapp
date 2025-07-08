@@ -40,10 +40,6 @@ export function ProposalCard({ proposal }: { proposal: Proposal }) {
       </CardHeader>
       <CardContent className="space-y-3 flex-grow">
         <p className="text-sm text-muted-foreground">{proposal.description}</p>
-        <div>
-          <h4 className="font-semibold text-sm">Goals</h4>
-          <p className="text-sm text-muted-foreground">{proposal.goals}</p>
-        </div>
       </CardContent>
       <CardFooter className="mt-auto border-t pt-4 text-xs text-muted-foreground">
         <div className="flex-1">

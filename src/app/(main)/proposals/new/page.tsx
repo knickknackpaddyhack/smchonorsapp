@@ -22,16 +22,15 @@ import { useUser } from '@/contexts/user-context';
 const formSchema = z.object({
   title: z.string().min(1, 'Title is required.'),
   description: z.string().min(1, 'Description is required.'),
-  goals: z.string().min(1, 'Goals are required.'),
   resources: z.string(),
   targetAudience: z.string(),
 });
 
-const eventTypes: { name: ProposalEventType, icon: React.ElementType, description: string, colorVar: string }[] = [
-    { name: 'Social Event', icon: PartyPopper, description: 'Engage the community with fun, informal gatherings.', colorVar: 'hsl(var(--chart-1))' },
-    { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.', colorVar: 'hsl(var(--chart-2))' },
-    { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with workshops, lectures, or study groups.', colorVar: 'hsl(var(--chart-3))' },
-    { name: 'Colloquium', icon: MessageSquareQuote, description: 'Share knowledge and interests through discussions and activities.', colorVar: 'hsl(var(--chart-4))' },
+const eventTypes: { name: ProposalEventType, icon: React.ElementType, description: string, titlePlaceholder: string, colorVar: string }[] = [
+    { name: 'Social Event', icon: PartyPopper, description: 'Engage the community with fun, informal gatherings.', titlePlaceholder: 'Aquinas Movie Night', colorVar: 'hsl(var(--chart-1))' },
+    { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.', titlePlaceholder: 'Volunteering at Legacy Garden', colorVar: 'hsl(var(--chart-2))' },
+    { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with disciplinary workshops, panels, and study groups.', titlePlaceholder: 'Finals Week Cocoa & Cram', colorVar: 'hsl(var(--chart-3))' },
+    { name: 'Colloquium', icon: MessageSquareQuote, description: 'Share knowledge and interests through discussions and activities.', titlePlaceholder: 'Fandoms in Our Culture', colorVar: 'hsl(var(--chart-4))' },
 ];
 
 
@@ -48,7 +47,6 @@ export default function NewProposalPage() {
     defaultValues: {
       title: '',
       description: '',
-      goals: '',
       resources: '',
       targetAudience: '',
     },
@@ -124,6 +122,7 @@ export default function NewProposalPage() {
   const selectedEventTypeDetails = eventTypes.find(e => e.name === eventType);
   const SelectedIcon = selectedEventTypeDetails?.icon || Users;
   const selectedColor = selectedEventTypeDetails?.colorVar || 'hsl(var(--primary))';
+  const selectedPlaceholder = 'e.g., ' + (selectedEventTypeDetails?.titlePlaceholder || 'Honors ' + eventType + ' Event');
 
   return (
     <Card 
@@ -155,9 +154,9 @@ export default function NewProposalPage() {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Proposal Title</FormLabel>
+                  <FormLabel>Event Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Community Park Cleanup Day" {...field} />
+                    <Input placeholder={selectedPlaceholder} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -178,25 +177,12 @@ export default function NewProposalPage() {
             />
             <FormField
               control={form.control}
-              name="goals"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Goals</FormLabel>
-                  <FormControl>
-                    <Textarea placeholder="What are the main objectives?" {...field} rows={3} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
               name="resources"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Resource Requirements</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., Volunteers, funding, equipment" {...field} />
+                    <Input placeholder="e.g., Venue reservations, funding, equipment" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -209,7 +195,7 @@ export default function NewProposalPage() {
                 <FormItem>
                   <FormLabel>Target Audience</FormLabel>
                   <FormControl>
-                    <Input placeholder="e.g., All residents, families with children" {...field} />
+                    <Input placeholder="e.g., Honors students, all SMC students, campus community" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

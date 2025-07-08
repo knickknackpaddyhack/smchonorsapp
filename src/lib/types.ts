@@ -20,7 +20,6 @@ export interface Proposal {
   title: string;
   eventType: ProposalEventType;
   description: string;
-  goals: string;
   resources: string;
   targetAudience: string;
   status: 'Under Review' | 'Approved' | 'In Progress' | 'Completed' | 'Rejected';
