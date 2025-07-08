@@ -18,7 +18,7 @@ let db: Firestore;
 
 export const missingKeys = Object.entries(firebaseConfig)
   .filter(([, value]) => !value)
-  .map(([key]) => key);
+  .map(([key]) => `NEXT_PUBLIC_${key.replace(/([A-Z])/g, '_$1').toUpperCase()}`);
 
 export const isFirebaseConfigured = missingKeys.length === 0;
 

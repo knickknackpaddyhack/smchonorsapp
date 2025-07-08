@@ -5,9 +5,10 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup,
+  signInWithRedirect,
   signOut as firebaseSignOut,
   User,
+  getRedirectResult,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -32,17 +33,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
+    // This handles the redirect result when the user returns to the app
+    getRedirectResult(auth)
+      .then((result) => {
+        // If result is null, it means the user just loaded the page without
+        // being redirected from a sign-in flow.
+        if (result) {
+           // User has successfully signed in. onAuthStateChanged will handle the user state.
+        }
+      })
+      .catch((error) => {
+        console.error('Error processing redirect result:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Sign-in Failed',
+          description: 'An error occurred during the sign-in process. Please try again.',
+        });
+      });
+
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      if (currentUser) {
-        setUser(currentUser);
-      } else {
-        setUser(null);
-      }
+      setUser(currentUser);
       setIsLoading(false);
     });
 
     return () => unsubscribe();
-  }, []);
+  }, [toast]);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
@@ -50,39 +65,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
     const provider = new GoogleAuthProvider();
-    try {
-      await signInWithPopup(auth, provider);
-      // The onAuthStateChanged listener will handle the user state update.
-    } catch (error: any) {
-      console.error('Detailed error during Google Sign-In with popup:', error);
-      
-      let title = 'Sign-in Failed';
-      let description = 'An unknown error occurred. Please check the console for more details.';
-
-      if (error.code === 'auth/popup-blocked') {
-        title = 'Popup Blocked';
-        description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.';
-      } else if (error.code === 'auth/popup-closed-by-user') {
-        title = 'Sign-in Window Closed';
-        description = 'This can indicate a configuration issue. Please check the Google Cloud Console: 1) Under APIs & Services > Credentials, ensure your API key has the correct Website restrictions. 2) In the same section, find your OAuth 2.0 Client ID and ensure your domains are listed under "Authorized JavaScript origins".';
-      } else if (error.code === 'auth/operation-not-allowed') {
-         title = 'Operation Not Allowed';
-         description = 'There is a configuration issue with your project. Please ensure the Google provider is enabled and a support email is set in the Firebase Console.';
-      }
-
-      toast({
-        variant: 'destructive',
-        title: title,
-        description: description,
-        duration: 9000,
-      });
-    }
+    await signInWithRedirect(auth, provider);
   };
 
   const signOut = async () => {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
+      setUser(null);
     } catch (error) {
       console.error('Error signing out:', error);
       toast({ variant: 'destructive', title: 'Sign-out Failed', description: 'Could not sign out.' });
