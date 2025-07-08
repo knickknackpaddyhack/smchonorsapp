@@ -63,11 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title = 'Popup Blocked';
         description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.';
       } else if (error.code === 'auth/popup-closed-by-user') {
-        title = 'Sign-in Cancelled';
-        description = 'The sign-in process was cancelled. This can happen if the popup is closed or if there is a configuration issue. Please ensure your API key and OAuth settings are correct in the Google Cloud Console.';
-      } else if (error.code === 'auth/operation-not-allowed' || error.message.includes('API_KEY_HTTP_REFERRER_BLOCKED')) {
-         title = 'Configuration Error';
-         description = 'There is a configuration issue with your project. Please check the "Authorized domains" in both Firebase and your Google Cloud API key settings. Also ensure the Google provider is enabled and a support email is set in the Firebase Console.';
+        title = 'Sign-in Window Closed';
+        description = 'This can indicate a configuration issue. Please check the Google Cloud Console: 1) Under APIs & Services > Credentials, ensure your API key has the correct Website restrictions. 2) In the same section, find your OAuth 2.0 Client ID and ensure your domains are listed under "Authorized JavaScript origins".';
+      } else if (error.code === 'auth/operation-not-allowed') {
+         title = 'Operation Not Allowed';
+         description = 'There is a configuration issue with your project. Please ensure the Google provider is enabled and a support email is set in the Firebase Console.';
       }
 
       toast({
