@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Send, Loader2, HeartHandshake, GraduationCap, ArrowLeft, Users, MessageSquareQuote } from 'lucide-react';
+import { Send, Loader2, HeartHandshake, GraduationCap, ArrowLeft, Users, MessageSquareQuote, PartyPopper } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import type { ProposalEventType } from '@/lib/types';
@@ -28,7 +28,7 @@ const formSchema = z.object({
 });
 
 const eventTypes: { name: ProposalEventType, icon: React.ElementType, description: string, colorVar: string }[] = [
-    { name: 'Social Event', icon: Users, description: 'Engage the community with fun, informal gatherings.', colorVar: 'hsl(var(--chart-1))' },
+    { name: 'Social Event', icon: PartyPopper, description: 'Engage the community with fun, informal gatherings.', colorVar: 'hsl(var(--chart-1))' },
     { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.', colorVar: 'hsl(var(--chart-2))' },
     { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with workshops, lectures, or study groups.', colorVar: 'hsl(var(--chart-3))' },
     { name: 'Colloquium', icon: MessageSquareQuote, description: 'Share knowledge through formal presentations or discussions.', colorVar: 'hsl(var(--chart-4))' },
