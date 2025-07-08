@@ -27,14 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    // onAuthStateChanged is the single source of truth. It handles the initial
-    // state, sign-ins, sign-outs, and the result of a successful popup.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsLoading(false);
     });
-
-    // Cleanup subscription on unmount
     return () => unsubscribe();
   }, []);
 
@@ -45,17 +41,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const provider = new GoogleAuthProvider();
-      // Using signInWithPopup instead of signInWithRedirect
       await signInWithPopup(auth, provider);
-      // onAuthStateChanged will handle the successful sign-in
     } catch (error: any) {
-        console.error("Error during Google Sign-In with popup:", error);
+        console.error("Authentication Error Details:", error);
+        
+        const errorCode = error.code || 'UNKNOWN_ERROR';
+        const errorMessage = `Sign-in failed with error code: ${errorCode}. This often indicates a configuration issue with your project's API key or OAuth settings in the Google Cloud Console. Please double-check your settings.`;
 
-        // Provide a consolidated, helpful error message.
         toast({
             variant: 'destructive',
-            title: 'Sign-In Failed',
-            description: 'The sign-in process was cancelled or failed. Please ensure popups are not blocked by your browser and that your Google Cloud API key and OAuth settings are correctly configured.'
+            title: 'Authentication Failed',
+            description: errorMessage,
+            duration: 9000,
         });
     }
   };
@@ -64,7 +61,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
-      // onAuthStateChanged will automatically update the user to null.
     } catch (error) {
       console.error('Error signing out:', error);
       toast({ variant: 'destructive', title: 'Sign-out Failed', description: 'Could not sign out.' });
