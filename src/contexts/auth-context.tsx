@@ -5,7 +5,7 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithRedirect,
+  signInWithPopup,
   signOut as firebaseSignOut,
   User,
 } from 'firebase/auth';
@@ -27,13 +27,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (!isFirebaseConfigured) {
-      setIsLoading(false);
-      return;
-    }
-
     // onAuthStateChanged is the single source of truth. It handles the initial
-    // state, sign-ins, sign-outs, and the result of signInWithRedirect.
+    // state, sign-ins, sign-outs, and the result of a successful popup.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       setIsLoading(false);
@@ -50,15 +45,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     try {
       const provider = new GoogleAuthProvider();
-      // The onAuthStateChanged observer will handle the result of this redirect.
-      await signInWithRedirect(auth, provider);
-    } catch (error) {
-        console.error("Error starting redirect sign-in:", error);
+      // Using signInWithPopup instead of signInWithRedirect
+      await signInWithPopup(auth, provider);
+      // onAuthStateChanged will handle the successful sign-in
+    } catch (error: any) {
+        console.error("Error during Google Sign-In with popup:", error);
+
+        // Provide a consolidated, helpful error message.
         toast({
             variant: 'destructive',
-            title: 'Sign-in Error',
-            description: 'Could not initiate the sign-in process.'
-        })
+            title: 'Sign-In Failed',
+            description: 'The sign-in process was cancelled or failed. Please ensure popups are not blocked by your browser and that your Google Cloud API key and OAuth settings are correctly configured.'
+        });
     }
   };
 
