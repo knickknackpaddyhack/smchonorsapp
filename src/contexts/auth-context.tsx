@@ -33,13 +33,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         return;
     }
 
-    // This handles the redirect result when the user returns to the app
+    let isMounted = true;
+
+    // This listener reacts to any auth state changes,
+    // including those triggered by getRedirectResult().
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+        if (isMounted) {
+            setUser(currentUser);
+        }
+    });
+
+    // Process the redirect result. If it's successful,
+    // it will trigger the onAuthStateChanged listener above.
+    // After it's done, we know the initial auth state is settled.
     getRedirectResult(auth)
       .then((result) => {
-        // If result is null, it means the user just loaded the page without
-        // being redirected from a sign-in flow.
         if (result) {
-           // User has successfully signed in. onAuthStateChanged will handle the user state.
+          // User has successfully signed in via redirect.
+          // onAuthStateChanged will handle setting the user object.
         }
       })
       .catch((error) => {
@@ -49,14 +60,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           title: 'Sign-in Failed',
           description: 'An error occurred during the sign-in process. Please try again.',
         });
+      })
+      .finally(() => {
+        // Now that the redirect has been processed, we can safely
+        // say the initial loading is complete.
+        if (isMounted) {
+            setIsLoading(false);
+        }
       });
 
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setIsLoading(false);
-    });
-
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe();
+    };
   }, [toast]);
 
   const signInWithGoogle = async () => {
