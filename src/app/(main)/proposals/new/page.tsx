@@ -105,9 +105,9 @@ export default function NewProposalPage() {
                           )}
                           style={{'--type-color': colorVar} as React.CSSProperties}
                       >
-                          <div className="flex items-center gap-4">
-                              <div className={cn("flex h-12 w-12 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-[var(--type-color)]")}>
-                                <Icon className={cn("h-6 w-6 transition-colors text-[var(--type-color)] group-hover:text-accent-foreground")} />
+                          <div className="flex items-center gap-6">
+                              <div className={cn("flex h-16 w-16 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-[var(--type-color)]")}>
+                                <Icon className={cn("h-8 w-8 transition-colors text-[var(--type-color)] group-hover:text-accent-foreground")} />
                               </div>
                               <div className="flex-1">
                                 <h3 className="text-lg font-semibold">{name}</h3>
@@ -121,15 +121,20 @@ export default function NewProposalPage() {
       )
   }
 
-  const SelectedIcon = eventTypes.find(e => e.name === eventType)?.icon || Users;
+  const selectedEventTypeDetails = eventTypes.find(e => e.name === eventType);
+  const SelectedIcon = selectedEventTypeDetails?.icon || Users;
+  const selectedColor = selectedEventTypeDetails?.colorVar || 'hsl(var(--primary))';
 
   return (
-    <Card className="max-w-3xl mx-auto">
+    <Card 
+        className="max-w-3xl mx-auto"
+        style={{'--proposal-accent': selectedColor} as React.CSSProperties}
+    >
       <CardHeader>
         <div className="flex items-start justify-between">
             <div>
                 <CardTitle className="font-headline text-2xl flex items-center gap-3">
-                    <SelectedIcon className="h-6 w-6 text-primary" />
+                    <SelectedIcon className="h-6 w-6 text-[var(--proposal-accent)]" />
                     New {eventType} Proposal
                 </CardTitle>
                 <CardDescription>
@@ -210,7 +215,11 @@ export default function NewProposalPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+            <Button 
+                type="submit" 
+                disabled={isSubmitting} 
+                className="w-full sm:w-auto bg-[var(--proposal-accent)] hover:opacity-90"
+            >
               {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
               ) : (
