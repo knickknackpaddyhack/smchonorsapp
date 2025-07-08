@@ -63,7 +63,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       let title = 'Sign-in Failed';
       let description = 'An unknown error occurred during sign-in.';
 
-      if (error.code === 'auth/popup-closed-by-user') {
+      const errorMessage = error.toString();
+      if (errorMessage.includes('API_KEY_HTTP_REFERRER_BLOCKED')) {
+        title = 'API Key Configuration Error';
+        description = "Your API key is blocking requests from Firebase's authentication domain. Please add your project's authDomain to the 'Website restrictions' in your Google Cloud API key settings.";
+      } else if (error.code === 'auth/popup-closed-by-user') {
         title = 'Sign-in Cancelled';
         description = 'The sign-in popup was closed. If the popup was blank or showed an error, this is often due to an API key misconfiguration. Please check your API key restrictions in the Google Cloud Console and ensure the Identity Toolkit API is enabled.';
       } else if (error.code === 'auth/popup-blocked') {
@@ -73,7 +77,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         title = 'Sign-in Method Disabled';
         description = 'The "Google" sign-in method is not enabled for this project, or the support email is missing. Please enable it in the Firebase Console under Authentication > Sign-in method.';
       }
-
 
       toast({ 
         variant: 'destructive', 

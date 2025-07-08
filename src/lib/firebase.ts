@@ -23,18 +23,6 @@ export const missingKeys = Object.entries(firebaseConfig)
 export const isFirebaseConfigured = missingKeys.length === 0;
 
 if (isFirebaseConfigured) {
-  console.log(
-    'Firebase Config Loaded:',
-    JSON.stringify(
-      {
-        projectId: firebaseConfig.projectId,
-        authDomain: firebaseConfig.authDomain,
-        appId: firebaseConfig.appId,
-      },
-      null,
-      2
-    )
-  );
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
