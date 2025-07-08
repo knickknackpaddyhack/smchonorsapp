@@ -7,8 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
-export default function ActivityDetailsPage({ params }: { params: { id: string } }) {
-  const activity = activities.find((a) => a.id === params.id);
+export default function ActivityDetailsPage(props: { params: { id: string } }) {
+  const activity = activities.find((a) => a.id === props.params.id);
 
   if (!activity) {
     notFound();
