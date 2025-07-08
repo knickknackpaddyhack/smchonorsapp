@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import * as z from 'zod';
-import { Send, Loader2, PartyPopper, HeartHandshake, GraduationCap, Presentation, ArrowLeft } from 'lucide-react';
+import { Send, Loader2, HeartHandshake, GraduationCap, ArrowLeft, Users, MessageSquareQuote } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import type { ProposalEventType } from '@/lib/types';
@@ -27,11 +27,11 @@ const formSchema = z.object({
   targetAudience: z.string(),
 });
 
-const eventTypes: { name: ProposalEventType, icon: React.ElementType, description: string }[] = [
-    { name: 'Social Event', icon: PartyPopper, description: 'Engage the community with fun, informal gatherings.' },
-    { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.' },
-    { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with workshops, lectures, or study groups.' },
-    { name: 'Colloquium', icon: Presentation, description: 'Share knowledge through formal presentations or discussions.' },
+const eventTypes: { name: ProposalEventType, icon: React.ElementType, description: string, colorVar: string }[] = [
+    { name: 'Social Event', icon: Users, description: 'Engage the community with fun, informal gatherings.', colorVar: 'hsl(var(--chart-1))' },
+    { name: 'Service Event', icon: HeartHandshake, description: 'Make a positive impact with volunteer-based activities.', colorVar: 'hsl(var(--chart-2))' },
+    { name: 'Academic Event', icon: GraduationCap, description: 'Foster learning with workshops, lectures, or study groups.', colorVar: 'hsl(var(--chart-3))' },
+    { name: 'Colloquium', icon: MessageSquareQuote, description: 'Share knowledge through formal presentations or discussions.', colorVar: 'hsl(var(--chart-4))' },
 ];
 
 
@@ -87,27 +87,33 @@ export default function NewProposalPage() {
   if (step === 1) {
       return (
           <Card className="max-w-3xl mx-auto">
-              <CardHeader>
+              <CardHeader className="text-center">
                   <CardTitle className="font-headline text-2xl">Submit a New Proposal</CardTitle>
                   <CardDescription>
                       To get started, please select the type of event you are proposing.
                   </CardDescription>
               </CardHeader>
-              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {eventTypes.map(({ name, icon: Icon, description }) => (
+              <CardContent className="grid grid-cols-1 gap-4">
+                  {eventTypes.map(({ name, icon: Icon, description, colorVar }) => (
                       <button
                           key={name}
                           onClick={() => selectEventType(name)}
                           className={cn(
-                              "p-6 border rounded-lg text-left hover:bg-muted/50 hover:border-primary/50 transition-all",
-                              "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            "p-4 border-2 rounded-lg text-left transition-all duration-300 group hover:shadow-lg",
+                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                            "bg-card hover:border-[var(--type-color)]"
                           )}
+                          style={{'--type-color': colorVar} as React.CSSProperties}
                       >
                           <div className="flex items-center gap-4">
-                              <Icon className="h-8 w-8 text-primary" />
-                              <h3 className="text-lg font-semibold">{name}</h3>
+                              <div className={cn("flex h-12 w-12 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-[var(--type-color)]")}>
+                                <Icon className={cn("h-6 w-6 transition-colors text-[var(--type-color)] group-hover:text-accent-foreground")} />
+                              </div>
+                              <div className="flex-1">
+                                <h3 className="text-lg font-semibold">{name}</h3>
+                                <p className="text-sm text-muted-foreground">{description}</p>
+                              </div>
                           </div>
-                          <p className="text-sm text-muted-foreground mt-2">{description}</p>
                       </button>
                   ))}
               </CardContent>
@@ -115,7 +121,7 @@ export default function NewProposalPage() {
       )
   }
 
-  const SelectedIcon = eventTypes.find(e => e.name === eventType)?.icon || PartyPopper;
+  const SelectedIcon = eventTypes.find(e => e.name === eventType)?.icon || Users;
 
   return (
     <Card className="max-w-3xl mx-auto">
