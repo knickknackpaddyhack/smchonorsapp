@@ -21,11 +21,36 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const { toast } = useToast();
+// Create a mock user object to bypass login in the development environment
+const mockUser: User = {
+  uid: 'mock-user-id',
+  email: 'test.user@example.com',
+  displayName: 'Test User',
+  photoURL: 'https://placehold.co/40x40.png',
+  providerId: 'google.com',
+  emailVerified: true,
+  isAnonymous: false,
+  metadata: {},
+  providerData: [],
+  refreshToken: '',
+  tenantId: null,
+  delete: async () => {},
+  getIdToken: async () => '',
+  getIdTokenResult: async () => ({} as any),
+  reload: async () => {},
+  toJSON: () => ({}),
+};
 
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  // Default to the mock user to simulate a logged-in state
+  const [user, setUser] = useState<User | null>(mockUser);
+  // Default to false since we are not performing a real auth check
+  const [isLoading, setIsLoading] = useState(false);
+  const { toast } = useToast();
+  
+  // The original onAuthStateChanged is disabled to allow the mock user to persist.
+  /*
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
@@ -33,41 +58,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     return () => unsubscribe();
   }, []);
+  */
 
   const signInWithGoogle = async () => {
-    if (!isFirebaseConfigured) {
-      toast({ variant: 'destructive', title: 'Firebase Not Configured', description: `Missing keys: ${missingKeys.join(', ')}` });
-      return;
-    }
-    try {
-      const provider = new GoogleAuthProvider();
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      await signInWithPopup(auth, provider);
-    } catch (error: any) {
-        console.error("Authentication Error Details:", error);
-        
-        const errorCode = error.code || 'UNKNOWN_ERROR';
-        const errorMessage = `Sign-in failed with error code: ${errorCode}. This often indicates a configuration issue with your project's API key or OAuth settings in the Google Cloud Console. Please double-check your settings.`;
-
-        toast({
-            variant: 'destructive',
-            title: 'Authentication Failed',
-            description: errorMessage,
-            duration: 9000,
-        });
-    }
+    toast({
+        title: "Authentication Bypassed",
+        description: "Login is simulated in this environment. You can proceed as a logged-in user.",
+    });
   };
 
   const signOut = async () => {
-    if (!isFirebaseConfigured) return;
-    try {
-      await firebaseSignOut(auth);
-    } catch (error) {
-      console.error('Error signing out:', error);
-      toast({ variant: 'destructive', title: 'Sign-out Failed', description: 'Could not sign out.' });
-    }
+    toast({
+        title: "Authentication Bypassed",
+        description: "Sign-out is disabled in this simulated environment.",
+    });
   };
 
   return (

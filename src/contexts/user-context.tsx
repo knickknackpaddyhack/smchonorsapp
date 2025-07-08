@@ -15,12 +15,30 @@ interface UserContextType {
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
+// Create a mock user profile to use when authentication is bypassed
+const mockProfile: UserProfile = {
+    id: 'mock-user-id',
+    name: 'Test User',
+    email: 'test.user@example.com',
+    photoURL: 'https://placehold.co/80x80.png',
+    joinedDate: new Date().toISOString(),
+    honorsPoints: 425,
+    engagements: [],
+    semesterGrad: 'Spring 2025',
+    semesterJoined: 'Fall 2023',
+    termStartSMC: 'Fall 2022',
+};
+
 export function UserProvider({ children }: { children: ReactNode }) {
   const { user: authUser } = useAuth();
-  const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  // Default to the mock profile to simulate a logged-in state
+  const [profile, setProfile] = useState<UserProfile | null>(mockProfile);
+  // Default to false since we are not performing a real profile fetch
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  // The original profile fetching logic is disabled to allow the mock profile to be used.
+  /*
   useEffect(() => {
     const handleUserProfile = async () => {
       if (!authUser) {
@@ -29,7 +47,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
         return;
       }
       
-      // We have a valid authUser, start the profile loading process.
       setIsLoading(true);
       if (!isFirebaseConfigured) {
           console.error("UserProvider: Cannot handle profile because Firebase is not configured.");
@@ -58,7 +75,6 @@ export function UserProvider({ children }: { children: ReactNode }) {
           };
           setProfile(userProfile);
         } else {
-          // User exists in Auth, but not in Firestore. Create their profile.
           const newProfileData = {
             name: authUser.displayName || 'New User',
             email: authUser.email || '',
@@ -101,6 +117,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
     
     handleUserProfile();
   }, [authUser, toast]);
+  */
 
   return (
     <UserContext.Provider value={{ profile, isLoading }}>

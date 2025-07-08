@@ -126,81 +126,16 @@ function UserMenu() {
     )
 }
 
-function FirebaseNotConfigured() {
-    return (
-        <div className="flex items-center justify-center h-full bg-muted/40 p-4">
-            <Card className="max-w-xl w-full">
-                <CardHeader>
-                    <CardTitle className="font-headline text-2xl">Firebase Not Configured</CardTitle>
-                    <CardDescription>
-                        Your application is missing its Firebase configuration. Please follow the steps below to fix it.
-                    </CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    <p>To use Firebase services like authentication and database, you need to provide your project's configuration keys in an environment file.</p>
-                    <Alert>
-                        <Terminal className="h-4 w-4" />
-                        <AlertTitle>Action Required</AlertTitle>
-                        <AlertDescription>
-                            <ol className="list-decimal list-inside space-y-2">
-                                <li>Create a file named <code>.env</code> in the root directory of your project (if it doesn&apos;t exist).</li>
-                                <li>Open your Firebase project settings and find your web app&apos;s configuration.</li>
-                                <li>Copy the configuration keys into the <code>.env</code> file. The keys should be prefixed with <code>NEXT_PUBLIC_</code>.</li>
-                            </ol>
-                        </AlertDescription>
-                    </Alert>
-                    <div className="text-sm p-4 bg-secondary rounded-md font-mono text-secondary-foreground overflow-x-auto">
-                        <p># .env</p>
-                        <p>NEXT_PUBLIC_FIREBASE_API_KEY=your_api_key</p>
-                        <p>NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN=your_auth_domain</p>
-                        <p>NEXT_PUBLIC_FIREBASE_PROJECT_ID=your_project_id</p>
-                        <p>NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_storage_bucket</p>
-                        <p>NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id</p>
-                        <p>NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id</p>
-                    </div>
-                     <p className="text-sm text-muted-foreground">The following keys are currently missing: <strong>{missingKeys.join(', ')}</strong>. After adding them, you may need to restart the development server.</p>
-                </CardContent>
-            </Card>
-        </div>
-    );
-}
-
 function LayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const pageTitle = menuItems.find(item => pathname.startsWith(item.href))?.label.replace('My ', '') || 'Honors App';
   
-  const { user: authUser, isLoading: isAuthLoading } = useAuth();
-  const { profile, isLoading: isProfileLoading } = useUser();
+  const { user: authUser } = useAuth();
+  const { profile } = useUser();
 
-  const renderContent = () => {
-    if (!isFirebaseConfigured) {
-      return <FirebaseNotConfigured />;
-    }
-
-    // Show a spinner if either the initial auth state is loading,
-    // or if we have a user but their profile is still loading.
-    if (isAuthLoading || (authUser && isProfileLoading)) {
-      return (
-        <div className="flex items-center justify-center h-full">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-        </div>
-      );
-    }
-
-    // If auth is resolved and there's no user, they need to log in.
-    if (!authUser) {
-      return <LoginPage />;
-    }
-    
-    // If we have an authUser but no profile (e.g., a creation error),
-    // send them back to the login page to try again.
-    if (!profile) {
-      return <LoginPage />;
-    }
-
-    // If we have both the user and their profile, show the app.
-    return children;
-  };
+  // Since authentication is now bypassed, we can simplify the rendering logic.
+  // The app will always render the main content for a logged-in user.
+  // The original logic for handling loading states and login screens is no longer needed here.
 
   return (
     <SidebarProvider>
@@ -227,9 +162,9 @@ function LayoutContent({ children }: { children: React.ReactNode }) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        { authUser && profile && <TopBar pageTitle={pageTitle} /> }
+        <TopBar pageTitle={pageTitle} />
         <main className="flex-1 overflow-y-auto p-4 sm:p-6 bg-background">
-          {renderContent()}
+          {children}
         </main>
       </SidebarInset>
     </SidebarProvider>
