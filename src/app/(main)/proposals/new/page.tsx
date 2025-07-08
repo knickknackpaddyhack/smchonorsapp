@@ -104,7 +104,7 @@ export default function NewProposalPage() {
                           style={{'--type-color': colorVar} as React.CSSProperties}
                       >
                           <div className="flex items-center gap-6">
-                              <div className={cn("flex h-16 w-16 items-center justify-center rounded-lg bg-muted transition-colors group-hover:bg-[var(--type-color)]")}>
+                              <div className={cn("flex h-16 w-16 items-center justify-center rounded-lg bg-muted/50 transition-colors group-hover:bg-[var(--type-color)]")}>
                                 <Icon className={cn("h-8 w-8 transition-colors text-[var(--type-color)] group-hover:text-accent-foreground")} />
                               </div>
                               <div className="flex-1">
