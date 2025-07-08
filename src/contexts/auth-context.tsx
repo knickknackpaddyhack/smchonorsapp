@@ -8,8 +8,6 @@ import {
   signInWithPopup,
   signOut as firebaseSignOut,
   User,
-  setPersistence,
-  browserLocalPersistence
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -53,34 +51,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
     const provider = new GoogleAuthProvider();
     try {
-      await setPersistence(auth, browserLocalPersistence);
       await signInWithPopup(auth, provider);
       // The onAuthStateChanged listener will handle the user state update.
     } catch (error: any) {
-      // Log the full error for better debugging
       console.error('Detailed error during Google Sign-In with popup:', error);
       
       let title = 'Sign-in Failed';
-      let description = 'An unknown error occurred during sign-in.';
+      let description = 'An unknown error occurred. Please check the console for more details.';
 
-      const errorMessage = error.toString();
-      if (errorMessage.includes('API_KEY_HTTP_REFERRER_BLOCKED')) {
-        title = 'API Key Configuration Error';
-        description = "Your API key is blocking requests from Firebase's authentication domain. Please add your project's authDomain to the 'Website restrictions' in your Google Cloud API key settings.";
+      if (error.code === 'auth/popup-blocked') {
+        title = 'Popup Blocked';
+        description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.';
       } else if (error.code === 'auth/popup-closed-by-user') {
         title = 'Sign-in Cancelled';
-        description = 'The sign-in popup was closed. If the popup was blank or showed an error, this is often due to an API key misconfiguration. Please check your API key restrictions in the Google Cloud Console and ensure the Identity Toolkit API is enabled.';
-      } else if (error.code === 'auth/popup-blocked') {
-          title = 'Popup Blocked'
-          description = 'The sign-in popup was blocked by your browser. Please allow popups for this site and try again.'
-      } else if (error.code === 'auth/operation-not-allowed') {
-        title = 'Sign-in Method Disabled';
-        description = 'The "Google" sign-in method is not enabled for this project, or the support email is missing. Please enable it in the Firebase Console under Authentication > Sign-in method.';
+        description = 'The sign-in process was cancelled. This can happen if the popup is closed or if there is a configuration issue. Please ensure your API key and OAuth settings are correct in the Google Cloud Console.';
+      } else if (error.code === 'auth/operation-not-allowed' || error.message.includes('API_KEY_HTTP_REFERRER_BLOCKED')) {
+         title = 'Configuration Error';
+         description = 'There is a configuration issue with your project. Please check the "Authorized domains" in both Firebase and your Google Cloud API key settings. Also ensure the Google provider is enabled and a support email is set in the Firebase Console.';
       }
 
-      toast({ 
-        variant: 'destructive', 
-        title: title, 
+      toast({
+        variant: 'destructive',
+        title: title,
         description: description,
         duration: 9000,
       });
