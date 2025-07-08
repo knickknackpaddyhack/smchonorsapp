@@ -8,7 +8,6 @@ import {
   signInWithRedirect,
   signOut as firebaseSignOut,
   User,
-  getRedirectResult,
 } from 'firebase/auth';
 import { auth, isFirebaseConfigured, missingKeys } from '@/lib/firebase';
 import { useToast } from '@/hooks/use-toast';
@@ -29,66 +28,45 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!isFirebaseConfigured) {
-        setIsLoading(false);
-        return;
+      setIsLoading(false);
+      return;
     }
 
-    let isMounted = true;
-
-    // This listener reacts to any auth state changes,
-    // including those triggered by getRedirectResult().
+    // onAuthStateChanged is the single source of truth. It handles the initial
+    // state, sign-ins, sign-outs, and the result of signInWithRedirect.
     const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-        if (isMounted) {
-            setUser(currentUser);
-        }
+      setUser(currentUser);
+      setIsLoading(false);
     });
 
-    // Process the redirect result. If it's successful,
-    // it will trigger the onAuthStateChanged listener above.
-    // After it's done, we know the initial auth state is settled.
-    getRedirectResult(auth)
-      .then((result) => {
-        if (result) {
-          // User has successfully signed in via redirect.
-          // onAuthStateChanged will handle setting the user object.
-        }
-      })
-      .catch((error) => {
-        console.error('Error processing redirect result:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Sign-in Failed',
-          description: 'An error occurred during the sign-in process. Please try again.',
-        });
-      })
-      .finally(() => {
-        // Now that the redirect has been processed, we can safely
-        // say the initial loading is complete.
-        if (isMounted) {
-            setIsLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-      unsubscribe();
-    };
-  }, [toast]);
+    // Cleanup subscription on unmount
+    return () => unsubscribe();
+  }, []);
 
   const signInWithGoogle = async () => {
     if (!isFirebaseConfigured) {
       toast({ variant: 'destructive', title: 'Firebase Not Configured', description: `Missing keys: ${missingKeys.join(', ')}` });
       return;
     }
-    const provider = new GoogleAuthProvider();
-    await signInWithRedirect(auth, provider);
+    try {
+      const provider = new GoogleAuthProvider();
+      // The onAuthStateChanged observer will handle the result of this redirect.
+      await signInWithRedirect(auth, provider);
+    } catch (error) {
+        console.error("Error starting redirect sign-in:", error);
+        toast({
+            variant: 'destructive',
+            title: 'Sign-in Error',
+            description: 'Could not initiate the sign-in process.'
+        })
+    }
   };
 
   const signOut = async () => {
     if (!isFirebaseConfigured) return;
     try {
       await firebaseSignOut(auth);
-      setUser(null);
+      // onAuthStateChanged will automatically update the user to null.
     } catch (error) {
       console.error('Error signing out:', error);
       toast({ variant: 'destructive', title: 'Sign-out Failed', description: 'Could not sign out.' });
