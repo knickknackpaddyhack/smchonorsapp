@@ -3,9 +3,8 @@
 
 # The build command for your app.
 buildCommand: npm run build
-
+# The command that starts your web server.
 runConfig:
-  # The command that starts your web server.
   command: npm start
   # Increase this value if you'd like to automatically spin up
   # more instances in response to increased traffic.
