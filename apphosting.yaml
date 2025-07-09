@@ -6,6 +6,6 @@ buildCommand: npm run build
 # The command that starts your web server.
 runConfig:
   command: npm start
-  # Increase this value if you'd like to automatically spin up
-  # more instances in response to increased traffic.
-  maxInstances: 1
+# Increase this value if you'd like to automatically spin up
+# more instances in response to increased traffic.
+maxInstances: 1
